@@ -1,0 +1,311 @@
+:root {
+  --sienna: #8C6140;
+  --dark-khaki: #B88D6C;
+  --black: #362E2B;
+  --silver: #C1B8B8;
+  --dim-gray: #676064;
+  --white: #FFFFFF;
+  --light-bg: #F5F3F2;
+}
+
+.registration-form {
+  width: 100%;
+}
+
+.registration-form h2 {
+  font-size: 2rem;
+  color: var(--black);
+  margin-bottom: 2rem;
+  text-align: center;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  animation: slideUp 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.form-group:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.form-group:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.form-group:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.form-group:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--dim-gray);
+  font-weight: 500;
+}
+
+/* New wrapper for password input to position the eye icon */
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-icon svg {
+  position: absolute;
+  left: 1rem;
+  color: var(--dark-khaki);
+  width: 20px;
+  height: 20px;
+  transition: color 0.3s ease;
+  z-index: 1;
+}
+
+.input-icon input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  border: 2px solid var(--silver);
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: var(--white);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* Add padding-right for password fields to make room for the eye icon */
+.input-wrapper .input-icon input {
+  padding-right: 3rem;
+}
+
+.input-icon input:focus {
+  border-color: var(--sienna);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(140, 97, 64, 0.2);
+}
+
+.input-icon input:focus + svg {
+  color: var(--sienna);
+}
+
+/* Updated position for the toggle visibility button */
+.toggle-visibility {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--dim-gray);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.3s ease;
+  padding: 0.25rem;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.toggle-visibility:hover {
+  color: var(--sienna);
+  background-color: var(--light-bg);
+}
+
+.toggle-visibility:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(140, 97, 64, 0.3);
+}
+
+.form-agreement {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  animation: slideUp 0.5s ease-out 0.5s forwards;
+  opacity: 0;
+}
+
+.form-agreement input[type="checkbox"] {
+  margin-top: 0.2rem;
+  accent-color: var(--sienna);
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.form-agreement label {
+  font-size: 0.85rem;
+  color: var(--dim-gray);
+  margin-bottom: 0;
+}
+
+.form-agreement a {
+  color: var(--sienna);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.form-agreement a:hover {
+  color: var(--dark-khaki);
+  text-decoration: underline;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 1rem;
+  background: var(--sienna);
+  color: var(--white);
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(140, 97, 64, 0.3);
+  animation: fadeIn 0.5s ease-out 0.6s forwards;
+  opacity: 0;
+}
+
+.submit-btn:hover {
+  background: var(--dark-khaki);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(140, 97, 64, 0.4);
+}
+
+.submit-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(140, 97, 64, 0.4);
+}
+
+/* Password strength indicator */
+.password-strength {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.password-strength-indicator {
+  height: 4px;
+  width: 100%;
+  background: var(--silver);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.password-strength-bar {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.password-strength-bar.weak {
+  width: 33.33%;
+  background-color: #E57373;
+}
+
+.password-strength-bar.medium {
+  width: 66.66%;
+  background-color: #FFD54F;
+}
+
+.password-strength-bar.strong {
+  width: 100%;
+  background-color: #81C784;
+}
+
+.password-strength-text {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.password-strength-text.weak {
+  color: #E57373;
+}
+
+.password-strength-text.medium {
+  color: #FFD54F;
+}
+
+.password-strength-text.strong {
+  color: #81C784;
+}
+
+/* Form validation styles */
+.input-icon input:invalid {
+  border-color: #E57373;
+}
+
+.error-message {
+  color: #E57373;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+/* Success message styles */
+.success-message {
+  text-align: center;
+  color: #81C784;
+  padding: 1rem;
+  border-radius: 10px;
+  background: rgba(129, 199, 132, 0.1);
+  border: 1px solid #81C784;
+  margin-top: 1rem;
+}
+
+.text-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--sienna);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+
+.text-link:hover {
+  color: var(--dark-khaki);
+}
+
+
+/* For reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .registration-form h2,
+  .form-group,
+  .form-agreement,
+  .submit-btn {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}

@@ -1,0 +1,296 @@
+:root {
+  --sienna: #8C6140;
+  --dark-khaki: #B88D6C;
+  --black: #362E2B;
+  --silver: #C1B8B8;
+  --dim-gray: #676064;
+  --white: #FFFFFF;
+  --light-bg: #F5F3F2;
+}
+
+.login-form {
+  width: 100%;
+}
+
+.login-form h2 {
+  font-size: 2rem;
+  color: var(--black);
+  margin-bottom: 2rem;
+  text-align: center;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  animation: slideUp 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.form-group:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.form-group:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--dim-gray);
+  font-weight: 500;
+}
+
+/* Input wrapper for password field with eye icon */
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-icon svg {
+  position: absolute;
+  left: 1rem;
+  color: var(--dark-khaki);
+  width: 20px;
+  height: 20px;
+  transition: color 0.3s ease;
+  z-index: 1;
+}
+
+.input-icon input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  border: 2px solid var(--silver);
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: var(--light-bg);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* Add padding-right for password field to accommodate the eye icon */
+.input-wrapper .input-icon input {
+  padding-right: 3rem;
+}
+
+.input-icon input:focus {
+  border-color: var(--sienna);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(140, 97, 64, 0.2);
+}
+
+.input-icon input:focus + svg {
+  color: var(--sienna);
+}
+
+/* Toggle visibility button (eye icon) */
+.toggle-visibility {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--dim-gray);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.3s ease;
+  padding: 0.25rem;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.toggle-visibility:hover {
+  color: var(--sienna);
+}
+
+.toggle-visibility:focus {
+  outline: none;
+}
+
+/* Remember me and Forgot password row */
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  animation: slideUp 0.5s ease-out forwards;
+  opacity: 0;
+  animation-delay: 0.3s;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.remember-me input[type="checkbox"] {
+  accent-color: var(--sienna);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.remember-me label {
+  margin-bottom: 0;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.forgot-password-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--sienna);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  text-decoration: none;
+}
+
+.forgot-password-link:hover {
+  color: var(--dark-khaki);
+  text-decoration: underline;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 1rem;
+  background: var(--sienna);
+  color: var(--white);
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(140, 97, 64, 0.3);
+  animation: fadeIn 0.5s ease-out 0.4s forwards;
+  opacity: 0;
+  margin-bottom: 1.5rem;
+}
+
+.submit-btn:hover {
+  background: var(--dark-khaki);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(140, 97, 64, 0.4);
+}
+
+.submit-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(140, 97, 64, 0.4);
+}
+
+/* Social login section */
+.social-login {
+  animation: fadeIn 0.5s ease-out 0.5s forwards;
+  opacity: 0;
+  text-align: center;
+}
+
+.divider {
+  position: relative;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--silver);
+  z-index: 1;
+}
+
+.divider span {
+  display: inline-block;
+  position: relative;
+  padding: 0 10px;
+  background-color: var(--white);
+  color: var(--dim-gray);
+  font-size: 0.9rem;
+  z-index: 2;
+}
+
+.social-buttons {
+  display: flex;
+  justify-content: center;
+}
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid var(--silver);
+  border-radius: 8px;
+  background-color: var(--white);
+  color: var(--black);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.social-btn:hover {
+  background-color: var(--light-bg);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Google icon specific styles */
+.google-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+/* For reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .login-form h2,
+  .form-group,
+  .form-options,
+  .submit-btn,
+  .social-login {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}
