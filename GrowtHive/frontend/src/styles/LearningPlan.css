@@ -1,0 +1,465 @@
+:root {
+  --sienna: #8C6140;
+  --dark-khaki: #B88D6C;
+  --black: #362E2B;
+  --silver: #C1B8B8;
+  --dim-gray: #676064;
+  --white: #fff;
+  --light-bg: #F5F3F2;
+  --accent-pink: #E8A798;
+  --accent-green: #7D9D8C;
+  --accent-blue: #7B9EA8;
+}
+
+/* Dashboard Layout integration */
+.dashboard-container {
+  display: grid;
+  grid-template-columns: 240px 1fr 300px;
+  min-height: 100vh;
+  background-color: var(--light-bg);
+}
+
+/* Learning Plan specific styles */
+.learning-main {
+  background-color: var(--light-bg);
+  padding: 1rem;
+  overflow-y: auto;
+  position: relative;
+}
+
+.learningplan-container {
+  padding: 0;
+  background: transparent;
+  min-height: auto;
+  margin-top: 1rem;
+}
+
+.learningplan-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.learningplan-header h1 {
+  color: var(--sienna);
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.learningplan-tabs {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding-bottom: 1rem;
+}
+
+.learningplan-tabs button {
+  background: var(--white);
+  border: 1px solid var(--silver);
+  color: var(--dim-gray);
+  padding: 0.5rem 1.2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.learningplan-tabs button.active,
+.learningplan-tabs button:hover {
+  background: var(--sienna);
+  color: var(--white);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(140, 97, 64, 0.2);
+}
+
+.learningplan-content {
+  margin-top: 1.5rem;
+}
+
+/* Enhanced styling for components */
+.plans-section, .quiz-section {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 16px rgba(54,46,43,0.06);
+}
+
+.plans-section h2, .quiz-section h2 {
+  color: var(--sienna);
+  font-size: 1.4rem;
+  margin-bottom: 1.2rem;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.plans-section h2::after, .quiz-section h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background-color: var(--sienna);
+  border-radius: 2px;
+}
+
+.plans-list, .quizzes-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.plan-card, .quiz-card {
+  background: var(--light-bg);
+  padding: 1.3rem 1.5rem;
+  border-radius: 10px;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(140,97,64,0.05);
+  transition: all 0.3s ease;
+}
+
+.plan-card:hover, .quiz-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(140,97,64,0.1);
+}
+
+.plan-card .card-header, .quiz-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.plan-card.completed {
+  background: linear-gradient(45deg, var(--dark-khaki), var(--sienna));
+  color: var(--white);
+}
+
+.plan-card button, .quiz-card button {
+  background: var(--sienna);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  margin-left: 0.5rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.plan-card button:hover, .quiz-card button:hover {
+  background: var(--dark-khaki);
+  transform: scale(1.05);
+}
+
+.plan-form-section {
+  margin-top: 2rem;
+  background: rgba(140, 97, 64, 0.05);
+  padding: 1.5rem;
+  border-radius: 10px;
+}
+
+.plan-form, .quiz-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.plan-form input, .quiz-form input, .plan-form select {
+  border: 1px solid var(--silver);
+  border-radius: 6px;
+  padding: 0.8rem 1rem;
+  font-size: 1rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.plan-form button, .quiz-form button {
+  background: var(--sienna);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  padding: 0.8rem 1.2rem;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.plan-form button:hover, .quiz-form button:hover {
+  background: var(--dark-khaki);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(140, 97, 64, 0.3);
+}
+
+.quiz-section .add-quiz-btn {
+  background: var(--dark-khaki);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  padding: 0.8rem 1.5rem;
+  margin-bottom: 1.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.quiz-section .add-quiz-btn:hover {
+  background: var(--sienna);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(140, 97, 64, 0.3);
+}
+
+.quiz-title {
+  font-weight: bold;
+  color: var(--sienna);
+  font-size: 1.1rem;
+}
+
+.shared-label {
+  background: var(--accent-blue);
+  color: var(--white);
+  border-radius: 4px;
+  padding: 0.3rem 0.6rem;
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.quiz-history {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--black);
+  background: rgba(193, 184, 184, 0.2);
+  padding: 0.8rem;
+  border-radius: 8px;
+}
+
+.quiz-history strong {
+  color: var(--sienna);
+}
+
+.quiz-history ul {
+  margin-top: 0.5rem;
+  padding-left: 1rem;
+}
+
+.quiz-history li {
+  margin-bottom: 0.3rem;
+}
+
+/* Course badge style */
+.course-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: rgba(140, 97, 64, 0.1);
+  color: var(--sienna);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Quiz modal styling */
+.quiz-take-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(54,46,43,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  backdrop-filter: blur(4px);
+}
+
+.quiz-take-content {
+  background: var(--white);
+  padding: 2.5rem;
+  border-radius: 14px;
+  min-width: 500px;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(54,46,43,0.15);
+}
+
+.quiz-take-content h3 {
+  color: var(--sienna);
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+}
+
+.quiz-take-content .close-btn {
+  position: absolute;
+  top: 1rem; right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--dim-gray);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.quiz-take-content .close-btn:hover {
+  color: var(--sienna);
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin: 1.5rem 0;
+}
+
+.quiz-options button {
+  background: var(--light-bg);
+  color: var(--black);
+  border: 1px solid var(--silver);
+  border-radius: 8px;
+  padding: 0.8rem 1.2rem;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quiz-options button.selected,
+.quiz-options button:hover {
+  background: var(--sienna);
+  color: var(--white);
+  border-color: var(--sienna);
+}
+
+.next-btn {
+  width: 100%;
+  margin-top: 1.5rem;
+  background: var(--sienna);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  padding: 0.9rem 0;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.next-btn:hover:not(:disabled) {
+  background: var(--dark-khaki);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(140, 97, 64, 0.3);
+}
+
+.next-btn:disabled {
+  background: var(--silver);
+  cursor: not-allowed;
+}
+
+.quiz-result {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.quiz-result h2 {
+  color: var(--sienna);
+  margin-bottom: 1.5rem;
+}
+
+.quiz-result p {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  color: var(--black);
+}
+
+.quiz-result strong {
+  color: var(--sienna);
+  font-size: 1.5rem;
+}
+
+.quiz-result button {
+  background: var(--sienna);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  padding: 0.8rem 2rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.quiz-result button:hover {
+  background: var(--dark-khaki);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(140, 97, 64, 0.3);
+}
+
+/* Quiz question block styling */
+.quiz-question-block {
+  background: var(--light-bg);
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+/* Notification types */
+.notification-item.learn .notification-icon {
+  color: var(--accent-green);
+}
+
+.notification-item.quiz .notification-icon {
+  color: var(--accent-blue);
+}
+
+.notification-item.complete .notification-icon {
+  color: var(--sienna);
+}
+
+.notification-item.reminder .notification-icon {
+  color: var(--accent-pink);
+}
+
+/* Responsive layouts */
+@media (max-width: 1200px) {
+  .dashboard-container {
+    grid-template-columns: 240px 1fr;
+  }
+  .dashboard-right-sidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-sidebar {
+    display: none;
+  }
+  .learningplan-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .plan-form, .quiz-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .plans-list, .quizzes-list {
+    flex-direction: column;
+  }
+  .quiz-take-content {
+    min-width: auto;
+    width: 90%;
+    padding: 1.5rem;
+  }
+}

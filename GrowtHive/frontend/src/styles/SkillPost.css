@@ -1,0 +1,149 @@
+/* src/styles/SkillPost.css */
+.skillpost-container {
+  padding: 1rem 0;
+  max-width: 100%;
+  color: #362E2B;
+}
+
+.skillpost-container h2 {
+  color: #8C6140;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.skillpost-form label {
+  display: block;
+  margin-bottom: 1rem;
+  color: #8C6140;
+  font-weight: 500;
+}
+
+.skillpost-form input[type="file"] {
+  margin-top: 0.5rem;
+  width: 100%;
+  border: 1px dashed #C1B8B8;
+  padding: 1rem;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.skillpost-form textarea,
+.skillpost-form select,
+.skillpost-form input[type="text"] {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid #C1B8B8;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.title-input {
+  font-weight: 500;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.half-width {
+  flex: 1;
+  min-width: 0;
+}
+
+.skillpost-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.preview-btn, .publish-btn {
+  background: #8C6140;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.7rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.preview-btn:hover, .publish-btn:hover {
+  background: #B88D6C;
+}
+
+.cancel-btn {
+  background: #676064;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.7rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cancel-btn:hover {
+  background: #362E2B;
+}
+
+.skillpost-preview {
+  text-align: left;
+}
+
+.preview-title {
+  font-size: 1.4rem;
+  color: #8C6140;
+  margin: 1rem 0;
+  font-weight: 600;
+}
+
+.media-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.media-preview img, .media-preview video {
+  max-width: 120px;
+  max-height: 120px;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.preview-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.preview-actions button {
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.preview-actions button:not(.publish-btn):not(.cancel-btn) {
+  background: #C1B8B8;
+  color: #362E2B;
+}
+
+.preview-actions button:not(.publish-btn):not(.cancel-btn):hover {
+  background: #B88D6C;
+  color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}

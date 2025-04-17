@@ -1,0 +1,317 @@
+/* src/styles/Notifications.css */
+.notifications-container {
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(54,46,43,0.07);
+  padding: 1.5rem;
+  margin: 1rem 0 2rem;
+  transition: all 0.3s ease;
+}
+
+.notifications-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.notifications-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--black);
+  font-size: 1.4rem;
+}
+
+.notifications-title-icon {
+  color: var(--sienna);
+}
+
+.unread-badge {
+  background-color: var(--sienna);
+  color: var(--white);
+  font-size: 0.75rem;
+  font-weight: 600;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.5rem;
+}
+
+.notifications-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.filter-dropdown {
+  position: relative;
+}
+
+.filter-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: transparent;
+  border: 1px solid var(--silver);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  color: var(--dim-gray);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-button:hover {
+  border-color: var(--sienna);
+  color: var(--sienna);
+}
+
+.filter-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 200px;
+  background-color: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  overflow: hidden;
+  margin-top: 0.5rem;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from { 
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.filter-option:hover {
+  background-color: rgba(184, 141, 108, 0.1);
+}
+
+.filter-option.active {
+  background-color: rgba(184, 141, 108, 0.2);
+  color: var(--sienna);
+  font-weight: 500;
+}
+
+.mark-read-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--sienna);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mark-read-button:hover {
+  background-color: var(--dark-khaki);
+}
+
+.mark-read-button:disabled {
+  background-color: var(--silver);
+  cursor: not-allowed;
+}
+
+.notifications-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.notification-item {
+  display: flex;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  position: relative;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.notification-item.read {
+  background-color: var(--white);
+}
+
+.notification-item.unread {
+  background-color: rgba(184, 141, 108, 0.08);
+}
+
+.notification-item:hover {
+  background-color: rgba(184, 141, 108, 0.12);
+  transform: translateX(3px);
+}
+
+.notification-avatar {
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+.notification-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--silver);
+}
+
+.system-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(123, 158, 168, 0.2);
+  color: var(--accent-blue);
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-message {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
+  color: var(--black);
+}
+
+.notification-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notification-time {
+  font-size: 0.8rem;
+  color: var(--dim-gray);
+}
+
+.notification-type-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 50px;
+}
+
+.notification-type-indicator.like {
+  background-color: rgba(229, 115, 115, 0.1);
+  color: #E57373;
+}
+
+.notification-type-indicator.comment {
+  background-color: rgba(123, 158, 168, 0.1);
+  color: var(--accent-blue);
+}
+
+.notification-type-indicator.plan {
+  background-color: rgba(125, 157, 140, 0.1);
+  color: var(--accent-green);
+}
+
+.unread-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--sienna);
+  position: absolute;
+  top: 1.5rem;
+  right: 1rem;
+}
+
+.loading-state, .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  color: var(--dim-gray);
+}
+
+.loading-state .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(184, 141, 108, 0.2);
+  border-top: 3px solid var(--sienna);
+  border-radius: 50%;
+  margin-bottom: 1rem;
+  animation: spin 1s linear infinite;
+}
+
+
+
+/* Styling for follow notification type */
+.notification-type-indicator.follow {
+  background-color: rgba(103, 58, 183, 0.1);
+  color: #673AB7; /* Purple color for follow notifications */
+}
+
+/* Optional: If you want to update the follower's avatar styling */
+.notification-item.unread[data-type="follow"] .notification-avatar img {
+  border: 2px solid #673AB7;
+}
+
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.empty-state svg {
+  color: var(--silver);
+  margin-bottom: 1rem;
+}
+
+.empty-state p {
+  font-size: 1.1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .notifications-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .notifications-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
