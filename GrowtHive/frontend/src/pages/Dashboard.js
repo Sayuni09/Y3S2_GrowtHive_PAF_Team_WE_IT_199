@@ -1,25 +1,25 @@
-// src/pages/Dashboard.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Home, User, Bell, Search, PlusCircle, Book, Heart, MessageSquare, Settings, LogOut, Sofa, Trophy } from 'lucide-react';
 import '../styles/Dashboard.css';
 import Modal from '../components/Modal';
 import SkillPost from '../components/SkillPost';
 import CommentSection from '../components/CommentSection';
+import LoginFormService from '../services/LoginFormService';
 
 function Dashboard() {
-  const navigate = useNavigate(); // Add navigate hook for programmatic navigation
+  const navigate = useNavigate();
   
-  // Mock data for demonstration
-  const [userData, _setUserData] = useState({
-    name: 'E.M.T.T.BANDARANAYAKE',
-    email: '3lakshana1124@gmail.com',
+  // Get user data from localStorage
+  const [userData, setUserData] = useState({
+    name: 'User',
+    email: '',
     profilePicture: 'https://randomuser.me/api/portraits/women/44.jpg',
     activitySummary: {
       postsCreated: 24,
       postsLiked: 48,
       commentsReceived: 37,
-      designChallenges: 14 // Added design challenges count
+      designChallenges: 14
     },
     notifications: [
       { id: 1, type: 'like', user: 'Sarah Johnson', content: 'liked your post about "Modern Living Room Design"', time: '2 hours ago' },
@@ -29,13 +29,35 @@ function Dashboard() {
     ]
   });
 
-  // Navigation function for Design Challenges card
+  // Load user data from localStorage on component mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUserData(prevData => ({
+          ...prevData,
+          name: parsedUser.name || 'User',
+          email: parsedUser.email || ''
+        }));
+      } catch (err) {
+        console.error('Error parsing stored user data:', err);
+      }
+    }
+  }, []);
+
+  // Navigation functions
   const navigateToMakeoverChallenges = () => {
     navigate('/makeover-challenges');
   };
-
+  
   const navigateToRoomMakeover = () => {
     navigate('/room-makeover');
+  };
+
+  const handleLogout = () => {
+    LoginFormService.logout();
+    navigate('/');
   };
 
   // Mock posts data with comments
@@ -292,7 +314,7 @@ function Dashboard() {
         </div>
 
         <div className="sidebar-footer">
-          <div className="menu-item logout">
+          <div className="menu-item logout" onClick={handleLogout}>
             <LogOut size={22} />
             <span>Logout</span>
           </div>
@@ -535,3 +557,4 @@ function Dashboard() {
 }
 
 export default Dashboard;
+

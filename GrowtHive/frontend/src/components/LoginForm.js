@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import '../styles/LoginForm.css';
+import LoginFormService from '../services/LoginFormService';
+import { toast } from 'react-toastify';
 
 function LoginForm() {
   const navigate = useNavigate();
@@ -12,6 +14,9 @@ function LoginForm() {
   });
   
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -25,13 +30,33 @@ function LoginForm() {
     setShowPassword(!showPassword);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log('Login submitted:', formData);
+    setIsLoading(true);
     
-    // After successful login, navigate to dashboard
-    navigate('/dashboard');
+    try {
+      const result = await LoginFormService.loginUser(
+        formData.email,
+        formData.password
+      );
+      
+      if (result.success) {
+        toast.success('Login successful!');
+        // Login successful, navigate to dashboard
+        navigate('/dashboard');
+      } else {
+        toast.error(result.error || 'Login failed. Please check your credentials.');
+      }
+    } catch (err) {
+      toast.error('An unexpected error occurred. Please try again.');
+      console.error('Login error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    LoginFormService.loginWithGoogle();
   };
 
   return (
@@ -101,8 +126,8 @@ function LoginForm() {
           </button>
         </div>
 
-        <button type="submit" className="submit-btn">
-          Sign In
+        <button type="submit" className="submit-btn" disabled={isLoading}>
+          {isLoading ? 'Signing In...' : 'Sign In'}
         </button>
       </form>
       
@@ -111,7 +136,12 @@ function LoginForm() {
           <span>Or sign in with</span>
         </div>
         <div className="social-buttons">
-          <button className="social-btn google" onClick={() => console.log('Google login clicked')}>
+          <button 
+            type="button"
+            className="social-btn google" 
+            onClick={handleGoogleLogin}
+            disabled={isLoading}
+          >
             <div className="google-icon">
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path

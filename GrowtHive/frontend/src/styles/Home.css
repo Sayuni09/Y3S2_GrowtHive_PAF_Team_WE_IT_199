@@ -1,3 +1,4 @@
+
 /* Home Page Styles with sophisticated color palette */
 :root {
   --sienna: #8C6140;
@@ -48,6 +49,16 @@ body {
 }
 
 /* Floating elements container */
+
+.floating-element {
+  animation-name: float;
+  animation-duration: var(--duration, 20s);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-fill-mode: forwards;
+}
+
+
 .floating-elements {
   position: absolute;
   top: 0;
@@ -126,6 +137,13 @@ body {
 .floating-elements.paused .floating-element {
   animation-play-state: paused;
 }
+
+.floating-element {
+  animation: float 20s linear infinite;
+  animation-fill-mode: forwards;
+}
+
+
 
 @keyframes float {
   0% {
@@ -538,3 +556,6 @@ body {
     transition: none !important;
   }
 }
+
+
+

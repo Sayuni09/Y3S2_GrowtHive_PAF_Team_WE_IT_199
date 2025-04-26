@@ -1,12 +1,39 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import LoginForm from '../components/LoginForm';
 import RegistrationForm from '../components/RegistrationForm';
 import { Home as HomeIcon, Sofa, Palette, PaintBucket } from 'lucide-react';
 import '../styles/Home.css';
+import LoginFormService from '../services/LoginFormService';
+//simport { toast } from 'react-toastify';
+
 
 function Home() {
+  const navigate = useNavigate();
   const [activeForm, setActiveForm] = useState('login');
   const [animationPaused, setAnimationPaused] = useState(false);
+  
+
+  // Check if user is already logged in or if this is an OAuth redirect
+  useEffect(() => {
+    // Check if already logged in
+    if (LoginFormService.isLoggedIn()) {
+      navigate('/dashboard');
+      return;
+    }
+    
+    // // Check for OAuth redirect
+    // const result = LoginFormService.handleOAuthRedirect();
+    // if (result) {
+    //   if (result.success) {
+    //     toast.success('Successfully logged in with Google!');
+    //     navigate('/dashboard');
+    //   } else {
+    //     toast.error(result.error || 'OAuth login failed');
+    //     console.error('OAuth error:', result.error);
+    //   }
+    // }
+  }, [navigate]);
   
   // Create floating elements dynamically
   useEffect(() => {
@@ -34,6 +61,10 @@ function Home() {
         element.style.top = `${posY}%`;
         element.style.animationDuration = `${duration}s`;
         element.style.animationDelay = `${delay}s`;
+        element.style.animationName = 'float';
+        element.style.animationTimingFunction = 'linear';
+        element.style.animationIterationCount = 'infinite';
+        element.style.animationFillMode = 'forwards';
         
         // Add shape class
         const shapeType = Math.floor(Math.random() * 5); // Increased variety
@@ -46,13 +77,14 @@ function Home() {
         // Add brightness class (randomly)
         const brightness = Math.floor(Math.random() * 3);
         if (brightness === 0) element.classList.add('bright');
-        else if (brightness === 5) element.classList.add('brighter');
+        else if (brightness === 2) element.classList.add('brighter');
         
         floatingContainer.appendChild(element);
       }
     }
   }, []);
 
+  
   const testimonials = [
     {
       id: 1,
@@ -96,7 +128,6 @@ function Home() {
       author: "Thomas Green",
       role: "Home Renovation Enthusiast"
     }
-    
   ];
 
   // Toggle animation pause on hover
