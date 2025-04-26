@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import '../styles/RegistrationForm.css';
+import RegistrationFormService from '../services/RegistrationFormService';
+import { toast } from 'react-toastify';
 
 function RegistrationForm() {
   const navigate = useNavigate();
@@ -14,6 +16,7 @@ function RegistrationForm() {
   
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -31,13 +34,38 @@ function RegistrationForm() {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle registration logic here
-    console.log('Registration submitted:', formData);
+    setIsLoading(true);
     
-    // After successful registration, navigate to dashboard
-    navigate('/dashboard');
+    // Check if passwords match
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      const result = await RegistrationFormService.registerUser(
+        formData.name,
+        formData.email,
+        formData.password
+      );
+      
+      if (result.success) {
+        // Registration successful, redirect to login with a state parameter
+        toast.success('Registration successful! Please log in with your credentials.');
+        
+        navigate('/login', { state: { registrationSuccess: true } });
+      } else {
+        toast.error(result.error || 'Registration failed. Please try again.');
+      }
+    } catch (err) {
+      toast.error('An unexpected error occurred. Please try again.');
+      console.error('Registration error:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -132,12 +160,12 @@ function RegistrationForm() {
         <div className="form-agreement">
           <input type="checkbox" id="terms" required />
           <label htmlFor="terms">
-  I agree to the <button type="button" className="text-link" onClick={() => console.log('Terms clicked')}>Terms of Service</button> and <button type="button" className="text-link" onClick={() => console.log('Privacy clicked')}>Privacy Policy</button>
-</label>
+            I agree to the <button type="button" className="text-link">Terms of Service</button> and <button type="button" className="text-link">Privacy Policy</button>
+          </label>
         </div>
 
-        <button type="submit" className="submit-btn">
-          Create Account
+        <button type="submit" className="submit-btn" disabled={isLoading}>
+          {isLoading ? 'Creating Account...' : 'Create Account'}
         </button>
       </form>
     </div>
