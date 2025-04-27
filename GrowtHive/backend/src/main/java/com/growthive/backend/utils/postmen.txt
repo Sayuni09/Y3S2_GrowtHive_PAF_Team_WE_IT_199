@@ -28,7 +28,7 @@ netstat -ano | findstr :8080
 
 /-------Kill the process using the PID 
 
-taskkill /F /PID 7192
+taskkill /F /PID 6860
 
 /-------Run Spring Boot
 
@@ -72,8 +72,70 @@ http://localhost:8080/oauth2/authorization/google
 
 
 
+======================== Post-Sharing 
+
+1.Login to get JWT token:
+
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test1@example.com",
+  "password": "test1123"
+}
+
+
+Body (JSON):
+
+{
+    "user": {
+        "roles": [
+            {
+                "authority": "ROLE_USER"
+            }
+        ],
+        "id": "680d2539e2b9ef2c5f75df57",
+        "email": "test1@gmail.com"
+    },
+    "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2ODBkMjUzOWUyYjllZjJjNWY3NWRmNTciLCJlbWFpbCI6InRlc3QxQGdtYWlsLmNvbSIsImlhdCI6MTc0NTcwMDg4NCwiZXhwIjoxNzQ1Nzg3Mjg0fQ.qzTQzE4ecvOp6eLVYDI471_PWjUMQ0Pq2y18HxY_ygg"
+}
+
+Save token from response : [JWT Token]
 
 
 
 
 
+2. Create post with category and visibility:
+
+POST http://localhost:8080/api/auth/posts
+Headers: Authorization: Bearer [token]
+Body (form-data):
+
+title: "My Interior Design Project"
+
+content: "This is my latest design project..."
+
+category: "Design"
+
+visibility: "public"
+
+media: [Select a file]
+
+Body (JSON):
+
+{
+    "id": "680d483423eb14650e82e487",
+    "title": "\"My Interior Design Project\"",
+    "content": "\"This is my latest design project for a minimalist living room.\"",
+    "mediaUrl": "/api/uploads/91525d13-0a0c-4e4b-924c-6aa7b6b733b4.png",
+    "mediaType": "image",
+    "userId": "680d2539e2b9ef2c5f75df57",
+    "userName": "test1",
+    "userProfilePic": "https://randomuser.me/api/portraits/men/1.jpg",
+    "category": "\"Design\"",
+    "visibility": "\"public\"",
+    "createdAt": "2025-04-27T02:25:16",
+    "likes": 0,
+    "comments": 0
+}
