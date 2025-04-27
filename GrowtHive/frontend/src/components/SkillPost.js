@@ -6,7 +6,7 @@ import SkillPostService from '../services/SkillPostService';
 import { toast } from 'react-toastify';
 
 const categories = [
-  'Coding', 'Cooking', 'Design', 'Music', 'Art', 'Fitness', 'Other'
+  'Interior Design', 'DIY & Crafts', 'Furniture Design', 'Lighting & Decor'
 ];
 
 const visibilityOptions = [

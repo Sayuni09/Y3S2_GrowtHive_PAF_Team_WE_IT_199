@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  Edit, 
+
   Image, 
   Book, 
-  Users, 
-  Grid, 
   Heart, 
   MessageSquare, 
   ArrowLeft, 
   Search, 
-  X, 
   Home, 
   User, 
   Bell, 
@@ -18,14 +15,14 @@ import {
   LogOut, 
   PlusCircle,
   Sofa,
-  Trash2,
 } from 'lucide-react';
 import '../styles/Profile.css';
 import Modal from '../components/Modal';
-import CommentSection from '../components/CommentSection';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import API_BASE_URL from '../services/baseUrl';
+import ProfileHeader from '../components/ProfileHeader';
+import ProfileTabs from '../components/ProfileTabs';
 
 function Profile() {
   const navigate = useNavigate();
@@ -99,7 +96,6 @@ function Profile() {
     setFilteredFollowing(connections.following);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
 
   // Fetch user data from localStorage
   const fetchUserData = () => {
@@ -193,6 +189,24 @@ function Profile() {
     ]);
   };
 
+  // Filter followers based on search input
+  useEffect(() => {
+    setFilteredFollowers(
+      connections.followers.filter(follower => 
+        follower.name.toLowerCase().includes(followerSearch.toLowerCase())
+      )
+    );
+  }, [followerSearch, connections.followers]);
+
+  // Filter following based on search input
+  useEffect(() => {
+    setFilteredFollowing(
+      connections.following.filter(following => 
+        following.name.toLowerCase().includes(followingSearch.toLowerCase())
+      )
+    );
+  }, [followingSearch, connections.following]);
+
   // Handle updating user profile
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -207,6 +221,17 @@ function Profile() {
     setUserData(editedData);
     setIsEditModalOpen(false);
     toast.success('Profile updated successfully');
+  };
+
+  // Open edit profile modal
+  const openEditModal = () => {
+    setEditedData({...userData});
+    setIsEditModalOpen(true);
+  };
+
+  // Toggle notifications panel
+  const toggleNotifications = () => {
+    setShowNotifications(!showNotifications);
   };
 
   // Handle edit post
@@ -374,35 +399,6 @@ function Profile() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Filter followers based on search input
-  useEffect(() => {
-    setFilteredFollowers(
-      connections.followers.filter(follower => 
-        follower.name.toLowerCase().includes(followerSearch.toLowerCase())
-      )
-    );
-  }, [followerSearch, connections.followers]);
-
-  // Filter following based on search input
-  useEffect(() => {
-    setFilteredFollowing(
-      connections.following.filter(following => 
-        following.name.toLowerCase().includes(followingSearch.toLowerCase())
-      )
-    );
-  }, [followingSearch, connections.following]);
-
-  // Open edit profile modal
-  const openEditModal = () => {
-    setEditedData({...userData});
-    setIsEditModalOpen(true);
-  };
-
-  // Toggle notifications panel
-  const toggleNotifications = () => {
-    setShowNotifications(!showNotifications);
   };
 
   // Toggle comments visibility for a post
@@ -620,7 +616,7 @@ function Profile() {
 
   return (
     <div className="profile-page-container">
-      {/* Left Sidebar - Unchanged */}
+      {/* Left Sidebar */}
       <div className="dashboard-sidebar">
         <div className="sidebar-header">
           <div className="logo">
@@ -660,7 +656,7 @@ function Profile() {
             <span>Settings</span>
           </div>
         </div>
-
+        
         <div className="sidebar-footer">
           <div className="menu-item logout">
             <LogOut size={22} />
@@ -671,7 +667,7 @@ function Profile() {
 
       {/* Main Content with Profile */}
       <div className="profile-main-content">
-        {/* Header and notifications - Unchanged */}
+        {/* Header and notifications */}
         <header className="profile-header-bar">
           <Link to="/dashboard" className="back-to-dashboard">
             <ArrowLeft size={18} />
@@ -739,327 +735,40 @@ function Profile() {
           </div>
         )}
 
-<div className="profile-container">
-          {/* Profile Header - Unchanged */}
-          <div className="profile-header" style={{ backgroundImage: `url(${userData.coverImage})` }}>
-            <div className="profile-header-overlay"></div>
-            <div className="profile-info">
-              <div className="profile-picture-container">
-                <img src={userData.profilePicture} alt="Profile" className="profile-picture" />
-              </div>
-              <div className="profile-details">
-                <h1>{userData.name}</h1>
-                <p className="profile-bio">{userData.bio}</p>
-                <div className="profile-meta">
-                  {userData.location && (
-                    <span className="meta-item">
-                      <span className="meta-icon">📍</span>
-                      {userData.location}
-                    </span>
-                  )}
-                  {userData.website && (
-                    <span className="meta-item">
-                      <span className="meta-icon">🌐</span>
-                      <a href={`https://${userData.website}`} target="_blank" rel="noopener noreferrer">
-                        {userData.website}
-                      </a>
-                    </span>
-                  )}
-                  <span className="meta-item">
-                    <span className="meta-icon">📅</span>
-                    Joined {userData.joinedDate}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="profile-actions">
-              <button className="edit-profile-btn" onClick={openEditModal}>
-                <Edit size={18} />
-                Edit Profile
-              </button>
-            </div>
-          </div>
+        <div className="profile-container">
+          {/* Profile Header Component */}
+          <ProfileHeader 
+            userData={userData}
+            openEditModal={openEditModal}
+            posts={posts}
+            likedPosts={likedPosts}
+          />
 
-     {/* Profile Stats - Unchanged */}
-     <div className="profile-stats">
-            <div className="stat-item">
-              <span className="stat-number">{posts.length}</span>
-              <span className="stat-label">Posts</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-number">{likedPosts.length}</span>
-              <span className="stat-label">Liked Posts</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-number">{userData.followers}</span>
-              <span className="stat-label">Followers</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-number">{userData.following}</span>
-              <span className="stat-label">Following</span>
-            </div>
-          </div>
-
-           {/* Profile Content Tabs */}
-           <div className="profile-content">
-            <div className="profile-tabs">
-              <button 
-                className={`tab-btn ${activeTab === 'posts' ? 'active' : ''}`}
-                onClick={() => setActiveTab('posts')}
-              >
-                <Grid size={18} />
-                Posts
-              </button>
-              <button 
-                className={`tab-btn ${activeTab === 'liked' ? 'active' : ''}`}
-                onClick={() => setActiveTab('liked')}
-              >
-                <Heart size={18} />
-                Liked Posts
-              </button>
-              <button 
-                className={`tab-btn ${activeTab === 'followers' ? 'active' : ''}`}
-                onClick={() => setActiveTab('followers')}
-              >
-                <Users size={18} />
-                Connections
-              </button>
-            </div>
-
-        {/* Tab Content */}
-        <div className="tab-content">
-              {/* Posts Tab - Updated with CRUD operations */}
-              {activeTab === 'posts' && (
-                <div className="posts-grid">
-                  {isLoading ? (
-                    <div className="loading">Loading your posts...</div>
-                  ) : posts.length > 0 ? (
-                    posts.map(post => (
-                      <div key={post.id} className="post-card">
-                        <div className="post-content">
-                          {/* Post header with actions */}
-                          <div className="post-header-actions">
-                            <h3 className="post-title">{post.title}</h3>
-                            <div className="post-actions">
-                              <button 
-                                className="edit-post-btn" 
-                                onClick={() => handleEditPost(post)}
-                                aria-label="Edit post"
-                              >
-                                <Edit size={16} />
-                              </button>
-                              <button 
-                                className="delete-post-btn" 
-                                onClick={() => handleDeletePrompt(post)}
-                                aria-label="Delete post"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </div>
-                          
-                          <p className="post-excerpt">{post.content}</p>
-                          <div className="post-meta">
-                            <span className="post-time">{post.timestamp}</span>
-                            {post.category && (
-                              <span className="post-category">{post.category}</span>
-                            )}
-                            <div className="post-stats">
-                              <span className="stat" onClick={() => likePost(post.id)}>
-                                <Heart size={16} />
-                                {post.likes}
-                              </span>
-                              <span 
-                                className={`stat comment-toggle ${post.showComments ? 'active' : ''}`}
-                                onClick={() => toggleComments(post.id)}
-                              >
-                                <MessageSquare size={16} />
-                                {post.comments.length}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          {/* Comment Section */}
-                          {post.showComments && (
-                            <CommentSection 
-                              post={post}
-                              userData={userData}
-                              onAddComment={(postId, comment) => addComment(postId, comment)}
-                              onAddReply={(postId, commentId, reply) => addReply(postId, commentId, reply)}
-                              onLikeComment={(postId, commentId, replyId) => likeComment(postId, commentId, replyId)}
-                              onClose={() => toggleComments(post.id)}
-                            />
-                          )}
-                        </div>
-                        
-                        {/* Post image */}
-                        {post.image && (
-                          <div className="post-image">
-                            <img src={post.image} alt={post.title} />
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="empty-tab-message">
-                      <div className="empty-icon">✍️</div>
-                      <h3>No posts yet</h3>
-                      <p>Share your first post to see it here</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Liked Posts Tab (previously Skills) */}
-              {activeTab === 'liked' && (
-                <div className="posts-grid">
-                  {likedPosts.length > 0 ? (
-                    likedPosts.map(post => (
-                      <div key={post.id} className="post-card liked-post-card">
-                        <div className="post-header">
-                          <img src={post.user.profilePic} alt={post.user.name} className="user-avatar" />
-                          <div className="post-author-info">
-                            <h4>{post.user.name}</h4>
-                            <span className="post-time">{post.timestamp}</span>
-                          </div>
-                        </div>
-                        <div className="post-content">
-                          <h3 className="post-title">{post.title}</h3>
-                          <p className="post-excerpt">{post.content}</p>
-                          <div className="post-meta">
-                            <div className="post-stats">
-                              <span className="stat unlike-btn" onClick={() => unlikePost(post.id)}>
-                                <Heart size={16} className="filled" />
-                                <span>Unlike</span>
-                              </span>
-                              <span 
-                                className={`stat comment-toggle ${post.showComments ? 'active' : ''}`}
-                                onClick={() => toggleComments(post.id, true)}
-                              >
-                                <MessageSquare size={16} />
-                                {post.comments.length}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          {/* Comment Section */}
-                          {post.showComments && (
-                            <CommentSection 
-                              post={post}
-                              userData={userData}
-                              onAddComment={(postId, comment) => addComment(postId, comment, true)}
-                              onAddReply={(postId, commentId, reply) => addReply(postId, commentId, reply, true)}
-                              onLikeComment={(postId, commentId, replyId) => likeComment(postId, commentId, replyId, true)}
-                              onClose={() => toggleComments(post.id, true)}
-                            />
-                          )}
-                        </div>
-                        {post.image && (
-                          <div className="post-image">
-                            <img src={post.image} alt={post.title} />
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="empty-tab-message">
-                      <div className="empty-icon">❤️</div>
-                      <h3>No liked posts yet</h3>
-                      <p>Posts you like will appear here</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Connections Tab */}
-              {activeTab === 'followers' && (
-                <div className="connections-container">
-                  <div className="connections-section">
-                    <h3>Followers</h3>
-                    <div className="search-box">
-                      <Search size={16} />
-                      <input
-                        type="text"
-                        placeholder="Search followers"
-                        value={followerSearch}
-                        onChange={(e) => setFollowerSearch(e.target.value)}
-                      />
-                      {followerSearch && (
-                        <button 
-                          className="clear-search" 
-                          onClick={() => setFollowerSearch('')}
-                        >
-                          <X size={16} />
-                        </button>
-                      )}
-                    </div>
-                    <div className="connections-list">
-                      {filteredFollowers.length > 0 ? (
-                        filteredFollowers.map(follower => (
-                          <div key={follower.id} className="connection-card">
-                            <div className="connection-info">
-                              <img src={follower.image} alt={follower.name} />
-                              <span className="connection-name">{follower.name}</span>
-                            </div>
-                            <button 
-                              className={`connection-action ${follower.isFollowing ? 'following' : ''}`}
-                              onClick={() => handleFollowToggle(follower.id, 'follower')}
-                            >
-                              {follower.isFollowing ? 'Following' : 'Follow Back'}
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="empty-search">No followers found matching "{followerSearch}"</div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="connections-section">
-                    <h3>Following</h3>
-                    <div className="search-box">
-                      <Search size={16} />
-                      <input
-                        type="text"
-                        placeholder="Search following"
-                        value={followingSearch}
-                        onChange={(e) => setFollowingSearch(e.target.value)}
-                      />
-                      {followingSearch && (
-                        <button 
-                          className="clear-search" 
-                          onClick={() => setFollowingSearch('')}
-                        >
-                          <X size={16} />
-                        </button>
-                      )}
-                    </div>
-                    <div className="connections-list">
-                      {filteredFollowing.length > 0 ? (
-                        filteredFollowing.map(followed => (
-                          <div key={followed.id} className="connection-card">
-                            <div className="connection-info">
-                              <img src={followed.image} alt={followed.name} />
-                              <span className="connection-name">{followed.name}</span>
-                            </div>
-                            <button 
-                              className="connection-action following"
-                              onClick={() => handleFollowToggle(followed.id, 'following')}
-                            >
-                              Following
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="empty-search">No following found matching "{followingSearch}"</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          {/* Profile Tabs Component */}
+          <ProfileTabs
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            posts={posts}
+            likedPosts={likedPosts}
+            isLoading={isLoading}
+            userData={userData}
+            followerSearch={followerSearch}
+            setFollowerSearch={setFollowerSearch}
+            followingSearch={followingSearch}
+            setFollowingSearch={setFollowingSearch}
+            filteredFollowers={filteredFollowers}
+            filteredFollowing={filteredFollowing}
+            connections={connections}
+            handleFollowToggle={handleFollowToggle}
+            handleEditPost={handleEditPost}
+            handleDeletePrompt={handleDeletePrompt}
+            toggleComments={toggleComments}
+            likePost={likePost}
+            unlikePost={unlikePost}
+            addComment={addComment}
+            addReply={addReply}
+            likeComment={likeComment}
+          />
         </div>
       </div>
 
@@ -1141,7 +850,7 @@ function Profile() {
         </div>
       </Modal>
 
-      {/* Post Edit Modal - New */}
+      {/* Post Edit Modal */}
       <Modal isOpen={isPostEditModalOpen} onClose={() => setIsPostEditModalOpen(false)}>
         <div className="edit-post-modal">
           <h2>Edit Post</h2>
@@ -1242,7 +951,7 @@ function Profile() {
         </div>
       </Modal>
 
-      {/* Delete Confirmation Modal - New */}
+      {/* Delete Confirmation Modal */}
       <Modal isOpen={confirmDeleteModalOpen} onClose={() => setConfirmDeleteModalOpen(false)}>
         <div className="delete-confirmation-modal">
           <h2>Delete Post</h2>
@@ -1262,8 +971,6 @@ function Profile() {
           </div>
         </div>
       </Modal>
-
-
     </div>
   );
 }
