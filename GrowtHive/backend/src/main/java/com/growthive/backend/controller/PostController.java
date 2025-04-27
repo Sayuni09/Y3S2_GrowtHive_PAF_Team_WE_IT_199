@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/auth/posts")  
+@RequestMapping("/api/auth/posts")  //  not Changed from /api/auth/posts to /api/posts
 @CrossOrigin(origins = "http://localhost:3000", maxAge = 3600, allowCredentials = "true")
 @RequiredArgsConstructor
 public class PostController {
@@ -25,6 +25,7 @@ public class PostController {
     private final PostService postService;
     private final JwtUtils jwtUtils;
 
+    // CREATE
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createPost(
             @RequestParam("title") String title,
@@ -74,7 +75,7 @@ public class PostController {
         }
     }
 
-    // Other methods remain unchanged
+    // READ ALL
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<Post>> getAllPosts() {
         logger.info("Fetching all posts");
@@ -83,6 +84,20 @@ public class PostController {
             .body(postService.getAllPosts());
     }
 
+    // READ BY ID
+    @GetMapping(value = "/{postId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getPostById(@PathVariable String postId) {
+        logger.info("Fetching post with ID: {}", postId);
+        try {
+            return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(postService.getPostById(postId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // READ BY USER
     @GetMapping(value = "/user/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<Post>> getPostsByUser(@PathVariable String userId) {
         logger.info("Fetching posts for user ID: {}", userId);
@@ -91,6 +106,77 @@ public class PostController {
             .body(postService.getPostsByUser(userId));
     }
 
+    // UPDATE
+    @PutMapping(value = "/{postId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, 
+                produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updatePost(
+            @PathVariable String postId,
+            @RequestParam(value = "title", required = false) String title,
+            @RequestParam(value = "content", required = false) String content,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "visibility", required = false) String visibility,
+            @RequestParam(value = "media", required = false) MultipartFile[] newMediaFiles,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            // Extract user ID from JWT token
+            String token = authHeader.substring(7);
+            String userId = jwtUtils.getUserIdFromJwtToken(token);
+            
+            logger.info("Updating post with ID: {} by user ID: {}", postId, userId);
+            
+            Post updatedPost = postService.updatePost(postId, userId, title, content, 
+                                                    category, visibility, newMediaFiles);
+            return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(updatedPost);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Validation error: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("error", e.getMessage()));
+        } catch (IOException e) {
+            logger.error("File upload error: ", e);
+            return ResponseEntity.badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("error", "Failed to update post: " + e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error updating post: ", e);
+            return ResponseEntity.badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // DELETE
+    @DeleteMapping(value = "/{postId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> deletePost(
+            @PathVariable String postId,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            // Extract user ID from JWT token
+            String token = authHeader.substring(7);
+            String userId = jwtUtils.getUserIdFromJwtToken(token);
+            
+            logger.info("Deleting post with ID: {} by user ID: {}", postId, userId);
+            
+            postService.deletePost(postId, userId);
+            return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("message", "Post deleted successfully"));
+        } catch (IllegalArgumentException e) {
+            logger.warn("Validation error: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error deleting post: ", e);
+            return ResponseEntity.badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // LIKE POST
     @PostMapping(value = "/{postId}/like", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Post> likePost(@PathVariable String postId) {
         logger.info("Liking post with ID: {}", postId);
