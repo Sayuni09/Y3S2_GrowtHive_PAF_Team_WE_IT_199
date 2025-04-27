@@ -1,0 +1,52 @@
+
+1. Log in to get JWT token ===========================
+
+POST : http://localhost:8080/api/auth/login
+
+Content-Type: application/json
+
+Body (raw JSON):
+
+{
+  "email": "test1@gmail.com",
+  "password": "test1123"
+}
+
+
+2. Create a Comment ==========================================
+
+POST : http://localhost:8080/api/auth/comments
+
+Authorization: Bearer {jwt_token}
+Content-Type: application/x-www-form-urlencoded
+
+Body (form-data):
+
+postId: {post_id}
+content: This is a test comment
+
+
+3. Get Comments for a Post ==================================
+
+GET : http://localhost:8080/api/auth/comments/post/{post_id}
+
+Authorization: Bearer {jwt_token}
+
+
+4. Update a Comment =========================================
+
+PUT : http://localhost:8080/api/auth/comments/{comment_id}
+
+Authorization: Bearer {jwt_token}
+Content-Type: application/x-www-form-urlencoded
+
+Body (form-data):
+
+content: This is an updated comment
+
+
+5. Delete a Comment=========================================
+
+DELETE : http://localhost:8080/api/auth/comments/{comment_id}
+
+Authorization: Bearer {jwt_token}
