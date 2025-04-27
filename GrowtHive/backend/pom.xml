@@ -93,6 +93,28 @@
 			<version>0.11.5</version>
 			<scope>runtime</scope>
 	</dependency>
+	<dependency>
+			<groupId>org.jcodec</groupId>
+			<artifactId>jcodec</artifactId>
+			<version>0.2.5</version>
+	</dependency>
+	<dependency>
+			<groupId>org.jcodec</groupId>
+			<artifactId>jcodec-javase</artifactId>
+			<version>0.2.5</version>
+	</dependency>
+	<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>2.4.1</version>
+	</dependency>
+	<dependency>
+			<groupId>org.mp4parser</groupId>
+			<artifactId>isoparser</artifactId>
+			<version>1.9.41</version>
+	</dependency>
+
+
 	</dependencies>
 
 	<build>
