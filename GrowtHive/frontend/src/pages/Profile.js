@@ -1,6 +1,5 @@
-// src/pages/Profile.js
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Edit, 
   Image, 
@@ -18,20 +17,27 @@ import {
   Settings, 
   LogOut, 
   PlusCircle,
-  Sofa 
+  Sofa,
+  Trash2,
 } from 'lucide-react';
 import '../styles/Profile.css';
 import Modal from '../components/Modal';
 import CommentSection from '../components/CommentSection';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import API_BASE_URL from '../services/baseUrl';
 
 function Profile() {
-  // Mock user data
+  const navigate = useNavigate();
+  
+  // User data state
   const [userData, setUserData] = useState({
-    name: 'E.M.T.T.BANDARANAYAKE',
-    email: '3lakshana1124@gmail.com',
+    id: '',
+    name: 'User',
+    email: '',
     profilePicture: 'https://randomuser.me/api/portraits/women/44.jpg',
     coverImage: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80',
-    bio: 'Interior design enthusiast with a passion for Scandinavian aesthetics and sustainable living solutions. Constantly exploring ways to blend functionality with beauty.',
+    bio: 'Interior design enthusiast with a passion for Scandinavian aesthetics and sustainable living solutions.',
     location: 'Colombo, Sri Lanka',
     website: 'designportfolio.com/emtt',
     followers: 128,
@@ -39,147 +45,155 @@ function Profile() {
     joinedDate: 'April 2023'
   });
 
-  // Mock posts data
-  const [postsOriginal] = useState([
-    {
-      id: 1,
-      title: 'Revamping Small Spaces: My Kitchen Makeover',
-      content: 'I recently completed a budget-friendly kitchen renovation that maximized storage while creating an open, airy feel. Here are the before and after photos along with my process...',
-      image: 'https://images.unsplash.com/photo-1588854337236-6889d631faa8?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGtpdGNoZW58ZW58MHx8MHx8fDA%3D',
-      likes: 48,
-      comments: [],
-      timestamp: '2 weeks ago'
-    },
-    {
-      id: 2,
-      title: 'Creating a Productive Home Office',
-      content: 'With remote work becoming more common, I wanted to share my approach to designing a home office that promotes productivity and wellbeing...',
-      image: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fGhvbWUlMjBvZmZpY2V8ZW58MHx8MHx8fDA%3D',
-      likes: 36,
-      comments: [],
-      timestamp: '1 month ago'
-    },
-    {
-      id: 3,
-      title: 'Sustainable Materials Guide',
-      content: 'After researching eco-friendly materials for my latest project, I have compiled this comprehensive guide to sustainable options for flooring, furniture, and décor...',
-      image: 'https://images.unsplash.com/photo-1618220179428-22790b461013?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8aW50ZXJpb3IlMjBkZXNpZ258ZW58MHx8MHx8fDA%3D',
-      likes: 72,
-      comments: [],
-      timestamp: '2 months ago'
-    }
-  ]);
-
-  // Mock liked posts data
-  const [likedPostsOriginal] = useState([
-    {
-      id: 101,
-      user: { name: 'Julia Martinez', profilePic: 'https://randomuser.me/api/portraits/women/22.jpg' },
-      title: 'Scandinavian Design Principles',
-      content: 'Exploring the clean lines and functional elegance of Scandinavian interior design. Here are my top takeaways from renovating my living space...',
-      image: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      likes: 128,
-      comments: [],
-      timestamp: '3 days ago'
-    },
-    {
-      id: 102,
-      user: { name: 'Robert Lee', profilePic: 'https://randomuser.me/api/portraits/men/32.jpg' },
-      title: 'Indoor Plants for Better Air Quality',
-      content: 'Did you know that certain houseplants can significantly improve your home\'s air quality? Here\'s my curated list of low-maintenance plants that purify your space...',
-      image: 'https://images.unsplash.com/photo-1556702571-3e11dd2b1a92?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      likes: 245,
-      comments: [],
-      timestamp: '1 week ago'
-    },
-    {
-      id: 103,
-      user: { name: 'Sarah Johnson', profilePic: 'https://randomuser.me/api/portraits/women/67.jpg' },
-      title: 'Color Theory in Home Decor',
-      content: 'Understanding color relationships can transform your space. Here\'s how I applied complementary colors to create a harmonious bedroom design...',
-      image: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      likes: 236,
-      comments: [],
-      timestamp: '5 days ago'
-    },
-    {
-      id: 104,
-      user: { name: 'Michael Chen', profilePic: 'https://randomuser.me/api/portraits/men/86.jpg' },
-      title: 'Creative Lighting Ideas for Modern Homes',
-      content: 'A step-by-step guide to enhancing your home ambiance using smart lighting solutions, mood lighting setups, and decorative fixtures...',
-      image: 'https://images.unsplash.com/photo-1647695878806-f629ac174a0e?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fGxpZ2h0bmluZyUyMGFuZCUyMGRlY29yfGVufDB8fDB8fHww',
-      likes: 421,
-      comments: [],
-      timestamp: '2 weeks ago'
-    }
-  ]);
-
-  // State for posts with comments structure
+  // States for the component
   const [posts, setPosts] = useState([]);
   const [likedPosts, setLikedPosts] = useState([]);
-
-  // Initialize posts with additional properties for comments
-  useEffect(() => {
-    setPosts(postsOriginal.map(post => ({
-      ...post,
-      showComments: false,
-      comments: post.comments || []
-    })));
-
-    setLikedPosts(likedPostsOriginal.map(post => ({
-      ...post,
-      showComments: false,
-      comments: post.comments || []
-    })));
-  }, [postsOriginal, likedPostsOriginal]);
-
-  // Mock followers/following data
-  const [connections, setConnections] = useState({
-    followers: [
-      { id: 1, name: 'Sarah Johnson', image: 'https://randomuser.me/api/portraits/women/22.jpg', isFollowing: true },
-      { id: 2, name: 'Michael Chen', image: 'https://randomuser.me/api/portraits/men/32.jpg', isFollowing: false },
-      { id: 3, name: 'Emma Davis', image: 'https://randomuser.me/api/portraits/women/67.jpg', isFollowing: true },
-      { id: 4, name: 'David Wilson', image: 'https://randomuser.me/api/portraits/men/91.jpg', isFollowing: false },
-      { id: 5, name: 'Anna Smith', image: 'https://randomuser.me/api/portraits/women/65.jpg', isFollowing: true },
-      { id: 6, name: 'Robert Brown', image: 'https://randomuser.me/api/portraits/men/43.jpg', isFollowing: false },
-      { id: 7, name: 'Jessica Lee', image: 'https://randomuser.me/api/portraits/women/89.jpg', isFollowing: true }
-    ],
-    following: [
-      { id: 8, name: 'Julia Martinez', image: 'https://randomuser.me/api/portraits/women/46.jpg' },
-      { id: 9, name: 'Robert Lee', image: 'https://randomuser.me/api/portraits/men/45.jpg' },
-      { id: 10, name: 'Lisa Thompson', image: 'https://randomuser.me/api/portraits/women/33.jpg' },
-      { id: 11, name: 'James Anderson', image: 'https://randomuser.me/api/portraits/men/22.jpg' },
-      { id: 12, name: 'Maria Rodriguez', image: 'https://randomuser.me/api/portraits/women/90.jpg' },
-      { id: 13, name: 'John Taylor', image: 'https://randomuser.me/api/portraits/men/60.jpg' }
-    ]
-  });
-
   const [activeTab, setActiveTab] = useState('posts');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isPostEditModalOpen, setIsPostEditModalOpen] = useState(false);
   const [editedData, setEditedData] = useState({...userData});
+  const [editingPost, setEditingPost] = useState(null);
   const [followerSearch, setFollowerSearch] = useState('');
   const [followingSearch, setFollowingSearch] = useState('');
-  const [filteredFollowers, setFilteredFollowers] = useState(connections.followers);
-  const [filteredFollowing, setFilteredFollowing] = useState(connections.following);
+  const [filteredFollowers, setFilteredFollowers] = useState([]);
+  const [filteredFollowing, setFilteredFollowing] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [connections, setConnections] = useState({
+    followers: [],
+    following: []
+  });
+  const [editedPostData, setEditedPostData] = useState({
+    title: '',
+    content: '',
+    category: '',
+    visibility: 'public',
+    mediaFiles: []
+  });
+  const [mediaPreview, setMediaPreview] = useState([]);
+  const [mediaToUpload, setMediaToUpload] = useState([]);
+  const [confirmDeleteModalOpen, setConfirmDeleteModalOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
 
-  // Filter connections based on search input
   useEffect(() => {
-    setFilteredFollowers(
-      connections.followers.filter(follower => 
-        follower.name.toLowerCase().includes(followerSearch.toLowerCase())
-      )
-    );
-  }, [followerSearch, connections.followers]);
+    fetchUserData();
+    fetchUserPosts();
+    fetchLikedPosts();
+    
+    // Connections data (mock for now)
+    setConnections({
+      followers: [
+        { id: 1, name: 'Sarah Johnson', image: 'https://randomuser.me/api/portraits/women/22.jpg', isFollowing: true },
+        { id: 2, name: 'Michael Chen', image: 'https://randomuser.me/api/portraits/men/32.jpg', isFollowing: false },
+        { id: 3, name: 'Emma Davis', image: 'https://randomuser.me/api/portraits/women/67.jpg', isFollowing: true },
+      ],
+      following: [
+        { id: 8, name: 'Julia Martinez', image: 'https://randomuser.me/api/portraits/women/46.jpg' },
+        { id: 9, name: 'Robert Lee', image: 'https://randomuser.me/api/portraits/men/45.jpg' },
+        { id: 10, name: 'Lisa Thompson', image: 'https://randomuser.me/api/portraits/women/33.jpg' },
+      ]
+    });
+    
+    // These will now run after connections has been set
+    setFilteredFollowers(connections.followers);
+    setFilteredFollowing(connections.following);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  useEffect(() => {
-    setFilteredFollowing(
-      connections.following.filter(following => 
-        following.name.toLowerCase().includes(followingSearch.toLowerCase())
-      )
-    );
-  }, [followingSearch, connections.following]);
 
+  // Fetch user data from localStorage
+  const fetchUserData = () => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUserData(prevData => ({
+          ...prevData,
+          id: parsedUser.id || '',
+          name: parsedUser.name || 'User',
+          email: parsedUser.email || ''
+        }));
+      } catch (err) {
+        console.error('Error parsing stored user data:', err);
+      }
+    }
+  };
+
+  // Fetch user posts from backend
+  const fetchUserPosts = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const userObject = JSON.parse(localStorage.getItem('user'));
+      
+      if (!token || !userObject) {
+        navigate('/');
+        return;
+      }
+      
+      const response = await axios.get(`${API_BASE_URL}/api/auth/posts/user/${userObject.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      // Transform backend posts to match frontend format
+      const transformedPosts = response.data.map(post => ({
+        id: post.id,
+        title: post.title,
+        content: post.content,
+        image: post.mediaFiles && post.mediaFiles.length > 0 ? 
+               (post.mediaFiles[0].type === 'image' ? `${API_BASE_URL}${post.mediaFiles[0].url}` : null) : null,
+        mediaFiles: post.mediaFiles || [],
+        category: post.category || '',
+        visibility: post.visibility || 'public',
+        likes: post.likes || 0,
+        comments: post.comments || [],
+        timestamp: new Date(post.createdAt).toLocaleDateString('en-US', {
+          month: 'long', day: 'numeric', year: 'numeric'
+        }),
+        showComments: false
+      }));
+      
+      setPosts(transformedPosts);
+    } catch (error) {
+      console.error('Error fetching user posts:', error);
+      toast.error('Failed to load your posts');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch liked posts (using mock data for now)
+  const fetchLikedPosts = async () => {
+    // Mock data for liked posts
+    setLikedPosts([
+      {
+        id: 101,
+        user: { name: 'Julia Martinez', profilePic: 'https://randomuser.me/api/portraits/women/22.jpg' },
+        title: 'Scandinavian Design Principles',
+        content: 'Exploring the clean lines and functional elegance of Scandinavian interior design. Here are my top takeaways from renovating my living space...',
+        image: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+        likes: 128,
+        comments: [],
+        timestamp: '3 days ago',
+        showComments: false
+      },
+      {
+        id: 102,
+        user: { name: 'Robert Lee', profilePic: 'https://randomuser.me/api/portraits/men/32.jpg' },
+        title: 'Indoor Plants for Better Air Quality',
+        content: 'Did you know that certain houseplants can significantly improve your home\'s air quality? Here\'s my curated list of low-maintenance plants that purify your space...',
+        image: 'https://images.unsplash.com/photo-1556702571-3e11dd2b1a92?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+        likes: 245,
+        comments: [],
+        timestamp: '1 week ago',
+        showComments: false
+      }
+    ]);
+  };
+
+  // Handle updating user profile
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEditedData({
@@ -188,11 +202,223 @@ function Profile() {
     });
   };
 
+  // Handle saving profile changes
   const handleSaveProfile = () => {
     setUserData(editedData);
     setIsEditModalOpen(false);
+    toast.success('Profile updated successfully');
   };
 
+  // Handle edit post
+  const handleEditPost = (post) => {
+    setEditingPost(post);
+    setEditedPostData({
+      title: post.title,
+      content: post.content,
+      category: post.category || '',
+      visibility: post.visibility || 'public'
+    });
+    
+    // Set media previews if available
+    if (post.mediaFiles && post.mediaFiles.length > 0) {
+      const previews = post.mediaFiles.map(media => ({
+        url: `${API_BASE_URL}${media.url}`,
+        type: media.type
+      }));
+      setMediaPreview(previews);
+    } else {
+      setMediaPreview([]);
+    }
+    
+    setIsPostEditModalOpen(true);
+  };
+
+  // Handle post input change
+  const handlePostInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditedPostData({
+      ...editedPostData,
+      [name]: value
+    });
+  };
+
+  // Handle media file changes
+  const handleMediaChange = (e) => {
+    const files = Array.from(e.target.files);
+    
+    if (files.length > 3) {
+      toast.warning('Maximum 3 files allowed');
+      return;
+    }
+    
+    // Clear previous preview and files
+    setMediaPreview([]);
+    setMediaToUpload([]);
+    
+    // Create previews and store files
+    const newPreviews = [];
+    const newFiles = [];
+    
+    files.forEach(file => {
+      if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+        newPreviews.push({
+          url: URL.createObjectURL(file),
+          type: file.type.startsWith('image/') ? 'image' : 'video'
+        });
+        newFiles.push(file);
+      } else {
+        toast.error('Only images and videos are supported');
+      }
+    });
+    
+    setMediaPreview(newPreviews);
+    setMediaToUpload(newFiles);
+  };
+
+  // Save updated post
+  const handleSavePostChanges = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        navigate('/');
+        return;
+      }
+      
+      // Create form data
+      const formData = new FormData();
+      formData.append('title', editedPostData.title);
+      formData.append('content', editedPostData.content);
+      
+      if (editedPostData.category) {
+        formData.append('category', editedPostData.category);
+      }
+      
+      formData.append('visibility', editedPostData.visibility);
+      
+      // Add media files if any
+      if (mediaToUpload.length > 0) {
+        mediaToUpload.forEach(file => {
+          formData.append('media', file);
+        });
+      }
+      
+      const response = await axios.put(
+        `${API_BASE_URL}/api/auth/posts/${editingPost.id}`, 
+        formData, 
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      
+      // Update the post in state
+      setPosts(posts.map(post => 
+        post.id === editingPost.id ? {
+          ...post,
+          title: editedPostData.title,
+          content: editedPostData.content,
+          category: editedPostData.category,
+          visibility: editedPostData.visibility,
+          // Update image if there's a new one
+          image: response.data.mediaFiles && response.data.mediaFiles.length > 0 ? 
+                (response.data.mediaFiles[0].type === 'image' ? `${API_BASE_URL}${response.data.mediaFiles[0].url}` : null) : null,
+          mediaFiles: response.data.mediaFiles || []
+        } : post
+      ));
+      
+      setIsPostEditModalOpen(false);
+      toast.success('Post updated successfully');
+    } catch (error) {
+      console.error('Error updating post:', error);
+      toast.error(error.response?.data?.error || 'Failed to update post');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Open delete confirmation modal
+  const handleDeletePrompt = (post) => {
+    setPostToDelete(post);
+    setConfirmDeleteModalOpen(true);
+  };
+
+  // Delete post
+  const handleDeletePost = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        navigate('/');
+        return;
+      }
+      
+      await axios.delete(`${API_BASE_URL}/api/auth/posts/${postToDelete.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      // Remove post from state
+      setPosts(posts.filter(post => post.id !== postToDelete.id));
+      
+      setConfirmDeleteModalOpen(false);
+      toast.success('Post deleted successfully');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast.error(error.response?.data?.error || 'Failed to delete post');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Filter followers based on search input
+  useEffect(() => {
+    setFilteredFollowers(
+      connections.followers.filter(follower => 
+        follower.name.toLowerCase().includes(followerSearch.toLowerCase())
+      )
+    );
+  }, [followerSearch, connections.followers]);
+
+  // Filter following based on search input
+  useEffect(() => {
+    setFilteredFollowing(
+      connections.following.filter(following => 
+        following.name.toLowerCase().includes(followingSearch.toLowerCase())
+      )
+    );
+  }, [followingSearch, connections.following]);
+
+  // Open edit profile modal
+  const openEditModal = () => {
+    setEditedData({...userData});
+    setIsEditModalOpen(true);
+  };
+
+  // Toggle notifications panel
+  const toggleNotifications = () => {
+    setShowNotifications(!showNotifications);
+  };
+
+  // Toggle comments visibility for a post
+  const toggleComments = (postId, isLikedPost = false) => {
+    if (isLikedPost) {
+      setLikedPosts(likedPosts.map(post => 
+        post.id === postId ? { ...post, showComments: !post.showComments } : post
+      ));
+    } else {
+      setPosts(posts.map(post => 
+        post.id === postId ? { ...post, showComments: !post.showComments } : post
+      ));
+    }
+  };
+
+  // Handle following/unfollowing
   const handleFollowToggle = (id, type) => {
     if (type === 'follower') {
       const updatedFollowers = connections.followers.map(follower => 
@@ -213,28 +439,6 @@ function Profile() {
         ...connections,
         following: updatedFollowing
       });
-    }
-  };
-
-  const openEditModal = () => {
-    setEditedData({...userData});
-    setIsEditModalOpen(true);
-  };
-
-  const toggleNotifications = () => {
-    setShowNotifications(!showNotifications);
-  };
-
-  // Toggle comments visibility for a post
-  const toggleComments = (postId, isLikedPost = false) => {
-    if (isLikedPost) {
-      setLikedPosts(likedPosts.map(post => 
-        post.id === postId ? { ...post, showComments: !post.showComments } : post
-      ));
-    } else {
-      setPosts(posts.map(post => 
-        post.id === postId ? { ...post, showComments: !post.showComments } : post
-      ));
     }
   };
 
@@ -297,7 +501,7 @@ function Profile() {
     };
     
     if (isLikedPost) {
-      const updatedPosts = likedPosts.map(post => {
+      setLikedPosts(likedPosts.map(post => {
         if (post.id === postId) {
           const updatedComments = post.comments.map(comment => {
             if (comment.id === commentId) {
@@ -315,11 +519,9 @@ function Profile() {
           };
         }
         return post;
-      });
-      
-      setLikedPosts(updatedPosts);
+      }));
     } else {
-      const updatedPosts = posts.map(post => {
+      setPosts(posts.map(post => {
         if (post.id === postId) {
           const updatedComments = post.comments.map(comment => {
             if (comment.id === commentId) {
@@ -337,9 +539,7 @@ function Profile() {
           };
         }
         return post;
-      });
-      
-      setPosts(updatedPosts);
+      }));
     }
   };
 
@@ -420,7 +620,7 @@ function Profile() {
 
   return (
     <div className="profile-page-container">
-      {/* Left Sidebar - Added from Dashboard */}
+      {/* Left Sidebar - Unchanged */}
       <div className="dashboard-sidebar">
         <div className="sidebar-header">
           <div className="logo">
@@ -471,7 +671,7 @@ function Profile() {
 
       {/* Main Content with Profile */}
       <div className="profile-main-content">
-        {/* Header with notifications and search */}
+        {/* Header and notifications - Unchanged */}
         <header className="profile-header-bar">
           <Link to="/dashboard" className="back-to-dashboard">
             <ArrowLeft size={18} />
@@ -539,8 +739,8 @@ function Profile() {
           </div>
         )}
 
-        <div className="profile-container">
-          {/* Profile Header */}
+<div className="profile-container">
+          {/* Profile Header - Unchanged */}
           <div className="profile-header" style={{ backgroundImage: `url(${userData.coverImage})` }}>
             <div className="profile-header-overlay"></div>
             <div className="profile-info">
@@ -581,8 +781,8 @@ function Profile() {
             </div>
           </div>
 
-          {/* Profile Stats */}
-          <div className="profile-stats">
+     {/* Profile Stats - Unchanged */}
+     <div className="profile-stats">
             <div className="stat-item">
               <span className="stat-number">{posts.length}</span>
               <span className="stat-label">Posts</span>
@@ -601,8 +801,8 @@ function Profile() {
             </div>
           </div>
 
-          {/* Profile Content Tabs */}
-          <div className="profile-content">
+           {/* Profile Content Tabs */}
+           <div className="profile-content">
             <div className="profile-tabs">
               <button 
                 className={`tab-btn ${activeTab === 'posts' ? 'active' : ''}`}
@@ -627,19 +827,44 @@ function Profile() {
               </button>
             </div>
 
-            {/* Tab Content */}
-            <div className="tab-content">
-              {/* Posts Tab */}
+        {/* Tab Content */}
+        <div className="tab-content">
+              {/* Posts Tab - Updated with CRUD operations */}
               {activeTab === 'posts' && (
                 <div className="posts-grid">
-                  {posts.length > 0 ? (
+                  {isLoading ? (
+                    <div className="loading">Loading your posts...</div>
+                  ) : posts.length > 0 ? (
                     posts.map(post => (
                       <div key={post.id} className="post-card">
                         <div className="post-content">
-                          <h3 className="post-title">{post.title}</h3>
+                          {/* Post header with actions */}
+                          <div className="post-header-actions">
+                            <h3 className="post-title">{post.title}</h3>
+                            <div className="post-actions">
+                              <button 
+                                className="edit-post-btn" 
+                                onClick={() => handleEditPost(post)}
+                                aria-label="Edit post"
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button 
+                                className="delete-post-btn" 
+                                onClick={() => handleDeletePrompt(post)}
+                                aria-label="Delete post"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                          
                           <p className="post-excerpt">{post.content}</p>
                           <div className="post-meta">
                             <span className="post-time">{post.timestamp}</span>
+                            {post.category && (
+                              <span className="post-category">{post.category}</span>
+                            )}
                             <div className="post-stats">
                               <span className="stat" onClick={() => likePost(post.id)}>
                                 <Heart size={16} />
@@ -667,6 +892,8 @@ function Profile() {
                             />
                           )}
                         </div>
+                        
+                        {/* Post image */}
                         {post.image && (
                           <div className="post-image">
                             <img src={post.image} alt={post.title} />
@@ -913,6 +1140,130 @@ function Profile() {
           </div>
         </div>
       </Modal>
+
+      {/* Post Edit Modal - New */}
+      <Modal isOpen={isPostEditModalOpen} onClose={() => setIsPostEditModalOpen(false)}>
+        <div className="edit-post-modal">
+          <h2>Edit Post</h2>
+          <div className="post-edit-form">
+            <div className="edit-field">
+              <label>Title</label>
+              <input
+                type="text"
+                name="title"
+                value={editedPostData.title}
+                onChange={handlePostInputChange}
+                required
+              />
+            </div>
+            
+            <div className="edit-field">
+              <label>Content</label>
+              <textarea
+                name="content"
+                value={editedPostData.content}
+                onChange={handlePostInputChange}
+                rows={4}
+                required
+              ></textarea>
+            </div>
+            
+            <div className="edit-row">
+              <div className="edit-field half">
+                <label>Category</label>
+                <select
+                  name="category"
+                  value={editedPostData.category}
+                  onChange={handlePostInputChange}
+                >
+                  <option value="">Select Category</option>
+                  <option value="Design">Design</option>
+                  <option value="Coding">Coding</option>
+                  <option value="Cooking">Cooking</option>
+                  <option value="Music">Music</option>
+                  <option value="Art">Art</option>
+                  <option value="Fitness">Fitness</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              
+              <div className="edit-field half">
+                <label>Visibility</label>
+                <select
+                  name="visibility"
+                  value={editedPostData.visibility}
+                  onChange={handlePostInputChange}
+                >
+                  <option value="public">Public - Anyone can see</option>
+                  <option value="followers">Followers Only</option>
+                  <option value="private">Private - Only you can see</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="edit-field">
+              <label>
+                Media (max 3 files)
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,video/*"
+                  onChange={handleMediaChange}
+                />
+              </label>
+              {mediaPreview.length > 0 && (
+                <div className="media-preview">
+                  {mediaPreview.map((media, index) => (
+                    <div key={index} className="preview-item">
+                      {media.type === 'image' ? (
+                        <img src={media.url} alt="Preview" />
+                      ) : (
+                        <video src={media.url} controls />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={() => setIsPostEditModalOpen(false)}>
+                Cancel
+              </button>
+              <button 
+                className="save-btn" 
+                onClick={handleSavePostChanges}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal - New */}
+      <Modal isOpen={confirmDeleteModalOpen} onClose={() => setConfirmDeleteModalOpen(false)}>
+        <div className="delete-confirmation-modal">
+          <h2>Delete Post</h2>
+          <p>Are you sure you want to delete this post? This action cannot be undone.</p>
+          
+          <div className="modal-actions">
+            <button className="cancel-btn" onClick={() => setConfirmDeleteModalOpen(false)}>
+              Cancel
+            </button>
+            <button 
+              className="delete-btn" 
+              onClick={handleDeletePost}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Deleting...' : 'Delete Post'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+
     </div>
   );
 }

@@ -1,6 +1,9 @@
-// src/components/SkillPost.js
+// D:\SprinBoot_Project\Git Repo\GrowtHive_With_Team\Y3S2_GrowtHive_PAF_Team_WE_IT_199\GrowtHive\frontend\src\components\SkillPost.js
+
 import React, { useState } from 'react';
 import '../styles/SkillPost.css';
+import SkillPostService from '../services/SkillPostService';
+import { toast } from 'react-toastify';
 
 const categories = [
   'Coding', 'Cooking', 'Design', 'Music', 'Art', 'Fitness', 'Other'
@@ -12,37 +15,91 @@ const visibilityOptions = [
   { value: 'private', label: 'Private - Only you can see' }
 ];
 
-function SkillPost({ onClose }) {
+function SkillPost({ onClose, onPostCreated }) {
   const [media, setMedia] = useState([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [visibility, setVisibility] = useState('public');
   const [preview, setPreview] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleMediaChange = (e) => {
-    const files = Array.from(e.target.files).slice(0, 3);
-    setMedia(files);
+    const selectedFiles = Array.from(e.target.files);
+    
+    // Validate number of files
+    if (selectedFiles.length > 3) {
+      toast.warning('Maximum 3 files allowed');
+      setMedia(selectedFiles.slice(0, 3));
+      return;
+    }
+    
+    // Check file types
+    const validFiles = selectedFiles.filter(file => 
+      file.type.startsWith('image/') || file.type.startsWith('video/')
+    );
+    
+    if (validFiles.length !== selectedFiles.length) {
+      toast.error('Only images and videos are allowed');
+    }
+    
+    setMedia(validFiles);
   };
 
   const handlePreview = () => setPreview(true);
   const handleEdit = () => setPreview(false);
   
-  const handlePublish = () => {
-    // Here you would add logic to save the post
-    console.log("Publishing post:", { 
-      media, 
-      title, 
-      description, 
-      category,
-      visibility 
-    });
-    onClose();
+  const handlePublish = async () => {
+    // Validation
+    if (!title.trim()) {
+      setError("Title is required");
+      return;
+    }
+    
+    if (!description.trim()) {
+      setError("Description is required");
+      return;
+    }
+    
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const result = await SkillPostService.createPost(
+        title,
+        description,
+        category,
+        visibility,
+        media
+      );
+      
+      if (result.success) {
+        toast.success('Post created successfully!');
+        
+        // Call the callback if provided
+        if (onPostCreated) {
+          onPostCreated(result.data);
+        }
+        
+        onClose();
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+      console.error('Post creation error:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="skillpost-container">
       <h2>Create Skill Sharing Post</h2>
+      
+      {error && <div className="error-message">{error}</div>}
+      
       {!preview ? (
         <form className="skillpost-form">
           <label>
@@ -54,6 +111,7 @@ function SkillPost({ onClose }) {
               onChange={handleMediaChange}
               max={3}
             />
+            <small>Note: Videos longer than 30 seconds will be rejected</small>
           </label>
           
           <label>
@@ -135,7 +193,13 @@ function SkillPost({ onClose }) {
           
           <div className="preview-actions">
             <button onClick={handleEdit}>Edit</button>
-            <button className="publish-btn" onClick={handlePublish}>Publish</button>
+            <button 
+              className="publish-btn" 
+              onClick={handlePublish} 
+              disabled={isLoading}
+            >
+              {isLoading ? 'Publishing...' : 'Publish'}
+            </button>
             <button className="cancel-btn" onClick={onClose}>Cancel</button>
           </div>
         </div>
