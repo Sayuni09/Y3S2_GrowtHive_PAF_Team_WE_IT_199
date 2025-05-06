@@ -1,23 +1,27 @@
-import React, { useState, useEffect } from 'react';
+// src/pages/Dashboard.js
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Home, User, Bell, Search, PlusCircle, Book, Heart, MessageSquare, Settings, LogOut, Sofa, Trophy } from 'lucide-react';
 import '../styles/Dashboard.css';
 import Modal from '../components/Modal';
 import SkillPost from '../components/SkillPost';
 import CommentSection from '../components/CommentSection';
+import MediaGallery from '../components/MediaGallery';
+import PostMediaModal from '../components/PostMediaModal';
 import LoginFormService from '../services/LoginFormService';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import API_BASE_URL from '../services/baseUrl';
 
 function Dashboard() {
   const navigate = useNavigate();
   const _location = useLocation();
 
-  
   // Get user data from localStorage
   const [userData, setUserData] = useState({
     name: 'User',
     email: '',
+    id: '', // Added user ID for checking comment ownership
     profilePicture: 'https://randomuser.me/api/portraits/women/44.jpg',
     activitySummary: {
       postsCreated: 24,
@@ -33,51 +37,168 @@ function Dashboard() {
     ]
   });
 
-    // Check for token in URL parameters on component mount
-    useEffect(() => {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get('token');
-      const userInfo = params.get('user');
-      
-      if (token) {
-        // Store token in localStorage
-        localStorage.setItem('token', token);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
-        // Store user info if available
-        if (userInfo) {
-          try {
-            const user = JSON.parse(decodeURIComponent(userInfo));
-            localStorage.setItem('user', JSON.stringify(user));
-          } catch (e) {
-            console.error('Failed to parse user info:', e);
-          }
-        }
-        
-        // Clean the URL by removing the query parameters
-        navigate('/dashboard', { replace: true });
-        
-        // Show a success toast notification
-        toast.success('Successfully logged in with Google!');
-      }
-    }, [navigate]);
+  // Posts state
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('feed');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
-    // Load user data from localStorage on component mount
-    useEffect(() => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
+  // Media modal state - add these for media gallery
+  const [activeMediaPost, setActiveMediaPost] = useState(null);
+  const [initialMediaIndex, setInitialMediaIndex] = useState(0);
+
+  // FIXED FUNCTION: Get the total comment count for a post including parent-child relationships
+  const getCommentCount = (post) => {
+    if (!post.comments || !Array.isArray(post.comments)) {
+      return 0;
+    }
+    
+    // Count all comments for this post, regardless of parent/child relationship
+    // since in CommentSection.js the display is just showing comments.length
+    return post.comments.length;
+  };
+
+  // Helper function to format timestamps
+  const formatTimeAgo = (timestamp) => {
+    if (!timestamp) return 'Recently';
+    
+    const now = new Date();
+    const date = new Date(timestamp);
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      if (diffHours === 0) {
+        const diffMinutes = Math.floor(diffTime / (1000 * 60));
+        return diffMinutes <= 1 ? 'Just now' : `${diffMinutes} minutes ago`;
+      }
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  // Function to fetch all posts - wrapped with useCallback to fix the warning
+  const fetchAllPosts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/api/auth/posts`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+
+      // Map API response to the format expected by the component
+      // and sort posts by creation date (newest first)
+      const formattedPosts = response.data
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .map(post => ({
+          id: post.id,
+          user: {
+            name: post.userName || 'Anonymous User',
+            profilePic: post.userProfilePic || 'https://randomuser.me/api/portraits/lego/1.jpg'
+          },
+          title: post.title || '',
+          content: post.content || '',
+          // Handle media files properly for gallery display
+          mediaFiles: Array.isArray(post.mediaFiles) ? post.mediaFiles : [],
+          image: post.mediaFiles && post.mediaFiles.length > 0 ? post.mediaFiles[0].url : null,
+          likes: post.likes || 0,
+          comments: Array.isArray(post.comments) ? post.comments.map(comment => ({
+            id: comment.id,
+            userId: comment.userId,
+            parentId: comment.parentId, // Make sure parentId is included here
+            user: {
+              name: comment.userName || 'Anonymous',
+              profilePic: comment.userProfilePic || 'https://randomuser.me/api/portraits/lego/1.jpg'
+            },
+            content: comment.content,
+            likes: comment.likes || 0,
+            time: formatTimeAgo(comment.createdAt),
+            replies: []
+          })) : [],
+          timestamp: formatTimeAgo(post.createdAt),
+          createdAt: post.createdAt, // Keep original date for sorting
+          showComments: false
+        }));
+
+      setPosts(formattedPosts);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      toast.error('Failed to load posts. Please try again later.');
+      setLoading(false);
+    }
+  }, []);
+
+  // Check for token in URL parameters on component mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const userInfo = params.get('user');
+    
+    if (token) {
+      // Store token in localStorage
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Store user info if available
+      if (userInfo) {
         try {
-          const parsedUser = JSON.parse(storedUser);
-          setUserData(prevData => ({
-            ...prevData,
-            name: parsedUser.name || 'User',
-            email: parsedUser.email || ''
-          }));
-        } catch (err) {
-          console.error('Error parsing stored user data:', err);
+          const user = JSON.parse(decodeURIComponent(userInfo));
+          localStorage.setItem('user', JSON.stringify(user));
+        } catch (e) {
+          console.error('Failed to parse user info:', e);
         }
       }
-    }, []);
+      
+      // Clean the URL by removing the query parameters
+      navigate('/dashboard', { replace: true });
+      
+      // Show a success toast notification
+      toast.success('Successfully logged in with Google!');
+    }
+  }, [navigate]);
+
+  // Load user data from localStorage on component mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUserData(prevData => ({
+          ...prevData,
+          id: parsedUser.id || '',
+          name: parsedUser.name || 'User',
+          email: parsedUser.email || '',
+          profilePicture: parsedUser.profilePicture || prevData.profilePicture
+        }));
+      } catch (err) {
+        console.error('Error parsing stored user data:', err);
+      }
+    }
+    
+    // Fetch posts when component mounts
+    fetchAllPosts();
+  }, [fetchAllPosts]);
+
+  // Handle opening the media modal
+  const openMediaModal = (post, index = 0) => {
+    setActiveMediaPost(post);
+    setInitialMediaIndex(index);
+  };
+
+  // Handle closing the media modal
+  const closeMediaModal = () => {
+    setActiveMediaPost(null);
+  };
 
   // Navigation functions
   const navigateToMakeoverChallenges = () => {
@@ -87,103 +208,11 @@ function Dashboard() {
   const navigateToRoomMakeover = () => {
     navigate('/room-makeover');
   };
-
+  
   const handleLogout = () => {
     LoginFormService.logout();
     navigate('/');
   };
-
-  // Mock posts data with comments
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      user: { name: 'Julia Martinez', profilePic: 'https://randomuser.me/api/portraits/women/22.jpg' },
-      title: 'Scandinavian Design Principles',
-      content: 'Exploring the clean lines and functional elegance of Scandinavian interior design. Here are my top takeaways from renovating my living space...',
-      image: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      likes: 28,
-      comments: [
-        {
-          id: 101,
-          user: { name: 'Michael Chen', profilePic: 'https://randomuser.me/api/portraits/men/32.jpg' },
-          content: 'I love how you incorporated natural elements while keeping the clean lines. Would you mind sharing where you got that coffee table?',
-          likes: 4,
-          time: '2 hours ago',
-          replies: [
-            {
-              id: 1011,
-              user: { name: 'Julia Martinez', profilePic: 'https://randomuser.me/api/portraits/women/22.jpg' },
-              content: 'Thank you! The coffee table is from Scandinavian Designs, but I found it on sale last month. I think they still have similar models.',
-              likes: 2,
-              time: '1 hour ago'
-            }
-          ]
-        },
-        {
-          id: 102,
-          user: { name: 'Emma Davis', profilePic: 'https://randomuser.me/api/portraits/women/67.jpg' },
-          content: 'The minimalist approach really makes the space feel larger. Great job on the color palette selection!',
-          likes: 7,
-          time: '3 hours ago',
-          replies: []
-        }
-      ],
-      timestamp: '3 hours ago',
-      showComments: false
-    },
-    {
-      id: 2,
-      user: { name: 'Robert Lee', profilePic: 'https://randomuser.me/api/portraits/men/32.jpg' },
-      title: 'Indoor Plants for Better Air Quality',
-      content: 'Did you know that certain houseplants can significantly improve your home\'s air quality? Here\'s my curated list of low-maintenance plants that purify your space...',
-      image: 'https://media.istockphoto.com/id/1837566278/photo/scandinavian-style-apartment-interior.webp?a=1&b=1&s=612x612&w=0&k=20&c=7qzRX7XP3Bok4EA6Nfqbn7s6CkYb9JwXM-vH8elseI4=',
-      likes: 45,
-      comments: [
-        {
-          id: 201,
-          user: { name: 'Sarah Johnson', profilePic: 'https://randomuser.me/api/portraits/women/22.jpg' },
-          content: 'I just got a snake plant after reading about its air-purifying benefits. Do you have any care tips for beginners?',
-          likes: 3,
-          time: '1 hour ago',
-          replies: []
-        }
-      ],
-      timestamp: '5 hours ago',
-      showComments: false
-    },
-    {
-      id: 3,
-      user: { name: 'Sarah Johnson', profilePic: 'https://randomuser.me/api/portraits/women/67.jpg' },
-      title: 'Color Theory in Home Decor',
-      content: 'Understanding color relationships can transform your space. Here\'s how I applied complementary colors to create a harmonious bedroom design...',
-      image: 'https://images.unsplash.com/photo-1556702571-3e11dd2b1a92?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      likes: 36,
-      comments: [
-        {
-          id: 301,
-          user: { name: 'Robert Lee', profilePic: 'https://randomuser.me/api/portraits/men/32.jpg' },
-          content: 'This is exactly what I needed! I\'ve been struggling with my bedroom color palette. Would you recommend warm or cool tones for a north-facing room?',
-          likes: 5,
-          time: '4 hours ago',
-          replies: [
-            {
-              id: 3011,
-              user: { name: 'Sarah Johnson', profilePic: 'https://randomuser.me/api/portraits/women/67.jpg' },
-              content: 'For north-facing rooms, I typically recommend warmer tones as they can help counteract the cooler light. Try terracotta or warm ochre tones as accents!',
-              likes: 3,
-              time: '3 hours ago'
-            }
-          ]
-        }
-      ],
-      timestamp: '1 day ago',
-      showComments: false
-    }
-  ]);
-  
-  const [activeTab, setActiveTab] = useState('feed');
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const toggleNotifications = () => {
     setShowNotifications(!showNotifications);
@@ -192,10 +221,9 @@ function Dashboard() {
   const handleCreatePost = () => {
     setIsModalOpen(true);
   };
-  
 
-   // Handle new post creation
-   const handlePostCreated = (newPost) => {
+  // Handle new post creation
+  const handlePostCreated = (newPost) => {
     // Update activity summary
     setUserData(prevData => ({
       ...prevData,
@@ -205,7 +233,7 @@ function Dashboard() {
       }
     }));
     
-    // Add the new post to the feed
+    // Add the new post to the feed at the top
     const newPostForFeed = {
       id: newPost.id,
       user: {
@@ -214,11 +242,14 @@ function Dashboard() {
       },
       title: newPost.title,
       content: newPost.content,
+      // Handle media files for the new post
+      mediaFiles: newPost.mediaFiles || [],
       image: newPost.mediaFiles && newPost.mediaFiles.length > 0 ? 
-             (newPost.mediaFiles[0].type === 'image' ? newPost.mediaFiles[0].url : null) : null,
+            (newPost.mediaFiles[0].type === 'image' ? newPost.mediaFiles[0].url : null) : null,
       likes: 0,
       comments: [],
       timestamp: 'Just now',
+      createdAt: new Date().toISOString(), // Add current date for sorting
       showComments: false
     };
     
@@ -233,14 +264,16 @@ function Dashboard() {
     ));
   };
 
-   // Add a new comment to a post
-   const addComment = (postId, commentText) => {
+  // Add a new comment to a post
+  const addComment = (postId, commentText) => {
     if (!commentText.trim()) return;
     
     const updatedPosts = posts.map(post => {
       if (post.id === postId) {
         const newCommentObj = {
           id: Date.now(),
+          userId: userData.id, // Add user ID for ownership
+          parentId: null, // Top-level comment has no parent
           user: { 
             name: userData.name, 
             profilePic: userData.profilePicture 
@@ -262,38 +295,31 @@ function Dashboard() {
     setPosts(updatedPosts);
   };
 
-
-
   // Add a reply to a comment
   const addReply = (postId, commentId, replyContent) => {
     if (!replyContent.trim()) return;
     
     const updatedPosts = posts.map(post => {
       if (post.id === postId) {
-        const updatedComments = post.comments.map(comment => {
-          if (comment.id === commentId) {
-            const newReply = {
-              id: Date.now(),
-              user: { 
-                name: userData.name, 
-                profilePic: userData.profilePicture 
-              },
-              content: replyContent,
-              likes: 0,
-              time: 'Just now'
-            };
-            
-            return {
-              ...comment,
-              replies: [...comment.replies, newReply]
-            };
-          }
-          return comment;
-        });
+        // Create the reply as a new comment with parentId
+        const newReply = {
+          id: Date.now(),
+          userId: userData.id,
+          parentId: commentId, // This marks it as a reply
+          user: { 
+            name: userData.name, 
+            profilePic: userData.profilePicture 
+          },
+          content: replyContent,
+          likes: 0,
+          time: 'Just now',
+          replies: []
+        };
         
+        // Add the new reply to the comments array
         return {
           ...post,
-          comments: updatedComments
+          comments: [...post.comments, newReply]
         };
       }
       return post;
@@ -302,39 +328,37 @@ function Dashboard() {
     setPosts(updatedPosts);
   };
 
- // Like a comment
- const likeComment = (postId, commentId, replyId = null) => {
-  setPosts(posts.map(post => {
-    if (post.id === postId) {
-      const updatedComments = post.comments.map(comment => {
-        if (replyId) {
-          // Liking a reply
-          if (comment.id === commentId) {
-            const updatedReplies = comment.replies.map(reply => 
-              reply.id === replyId ? { ...reply, likes: reply.likes + 1 } : reply
-            );
-            return { ...comment, replies: updatedReplies };
+  // Like a comment
+  const likeComment = (postId, commentId, replyId = null) => {
+    setPosts(posts.map(post => {
+      if (post.id === postId) {
+        const updatedComments = post.comments.map(comment => {
+          if (replyId) {
+            // Liking a reply
+            if (comment.id === commentId) {
+              const updatedReplies = comment.replies.map(reply => 
+                reply.id === replyId ? { ...reply, likes: reply.likes + 1 } : reply
+              );
+              return { ...comment, replies: updatedReplies };
+            }
+            return comment;
+          } else {
+            // Liking a comment
+            if (comment.id === commentId) {
+              return { ...comment, likes: comment.likes + 1 };
+            }
+            return comment;
           }
-          return comment;
-        } else {
-          // Liking a comment
-          if (comment.id === commentId) {
-            return { ...comment, likes: comment.likes + 1 };
-          }
-          return comment;
-        }
-      });
-      
-      return { ...post, comments: updatedComments };
-    }
-    return post;
-  }));
-};
+        });
+        
+        return { ...post, comments: updatedComments };
+      }
+      return post;
+    }));
+  };
 
-
-
-   // Like a post
-   const likePost = (postId) => {
+  // Like a post
+  const likePost = (postId) => {
     setPosts(posts.map(post =>
       post.id === postId ? { ...post, likes: post.likes + 1 } : post
     ));
@@ -466,7 +490,6 @@ function Dashboard() {
             </div>
           </div>
           
-          {/* REPLACED: Learning Progress Card with Design Challenges Card */}
           <div 
             className="summary-widget challenges-widget" 
             onClick={navigateToMakeoverChallenges}
@@ -497,52 +520,65 @@ function Dashboard() {
           <h2>Your Feed</h2>
           
           <div className="posts-container">
-            {posts.map(post => (
-              <div key={post.id} className="post-card">
-                <div className="post-header">
-                  <img src={post.user.profilePic} alt={post.user.name} className="user-avatar" />
-                  <div className="post-info">
-                    <h4>{post.user.name}</h4>
-                    <span className="post-time">{post.timestamp}</span>
-                  </div>
-                </div>
-                
-                <h3 className="post-title">{post.title}</h3>
-                <p className="post-content">{post.content}</p>
-                
-                {post.image && (
-                  <div className="post-image">
-                    <img src={post.image} alt={post.title} />
-                  </div>
-                )}
-                
-                <div className="post-actions">
-                  <div className="action-button" onClick={() => likePost(post.id)}>
-                    <Heart size={20} />
-                    <span>{post.likes}</span>
-                  </div>
-                  <div 
-                    className={`action-button ${post.showComments ? 'active' : ''}`} 
-                    onClick={() => toggleComments(post.id)}
-                  >
-                    <MessageSquare size={20} />
-                    <span>{post.comments.length}</span>
-                  </div>
-                </div>
-
-                {/* Comment Section Component */}
-                {post.showComments && (
-                  <CommentSection
-                    post={post}
-                    userData={userData}
-                    onAddComment={addComment}
-                    onAddReply={addReply}
-                    onLikeComment={likeComment}
-                    onClose={() => toggleComments(post.id)}
-                  />
-                )}
+            {loading ? (
+              <div className="loading-posts">
+                <p>Loading posts...</p>
               </div>
-            ))}
+            ) : posts.length === 0 ? (
+              <div className="no-posts">
+                <p>No posts found. Start by creating your first post!</p>
+              </div>
+            ) : (
+              posts.map(post => (
+                <div key={post.id} className="post-card">
+                  <div className="post-header">
+                    <img src={post.user.profilePic} alt={post.user.name} className="user-avatar" />
+                    <div className="post-info">
+                      <h4>{post.user.name}</h4>
+                      <span className="post-time">{post.timestamp}</span>
+                    </div>
+                  </div>
+                  
+                  <h3 className="post-title">{post.title}</h3>
+                  <p className="post-content">{post.content}</p>
+                  
+                  {/* Replace single image display with MediaGallery component */}
+                  {post.mediaFiles && post.mediaFiles.length > 0 && (
+                    <MediaGallery 
+                      mediaFiles={post.mediaFiles} 
+                      API_BASE_URL={API_BASE_URL} 
+                      onClick={() => openMediaModal(post)}
+                    />
+                  )}
+                  
+                  <div className="post-actions">
+                    <div className="action-button" onClick={() => likePost(post.id)}>
+                      <Heart size={20} />
+                      <span>{post.likes}</span>
+                    </div>
+                    <div 
+                      className={`action-button ${post.showComments ? 'active' : ''}`} 
+                      onClick={() => toggleComments(post.id)}
+                    >
+                      <MessageSquare size={20} />
+                      <span>{getCommentCount(post)}</span>
+                    </div>
+                  </div>
+
+                  {/* Comment Section Component */}
+                  {post.showComments && (
+                    <CommentSection
+                      post={post}
+                      userData={userData}
+                      onAddComment={addComment}
+                      onAddReply={addReply}
+                      onLikeComment={likeComment}
+                      onClose={() => toggleComments(post.id)}
+                    />
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </section>
       </div>
@@ -618,6 +654,17 @@ function Dashboard() {
         </div>
       </div>
 
+      {/* Media Modal */}
+      {activeMediaPost && activeMediaPost.mediaFiles && activeMediaPost.mediaFiles.length > 0 && (
+        <PostMediaModal
+          isOpen={activeMediaPost !== null}
+          onClose={closeMediaModal}
+          mediaFiles={activeMediaPost.mediaFiles}
+          API_BASE_URL={API_BASE_URL}
+          initialIndex={initialMediaIndex}
+        />
+      )}
+
       {/* Modal for SkillPost */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <SkillPost 
@@ -630,4 +677,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-
