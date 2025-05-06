@@ -1,4 +1,3 @@
-
 package com.growthive.backend.service;
 
 import com.growthive.backend.model.Comment;
@@ -24,8 +23,8 @@ public class CommentService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
 
-    // Create a new comment
-    public Comment createComment(String postId, String userId, String content) {
+    // Create a new comment or reply
+    public Comment createComment(String postId, String userId, String content, String parentId) {
         // Validate post exists
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
@@ -34,7 +33,14 @@ public class CommentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        logger.info("Creating comment for post ID: {} by user: {}", postId, user.getEmail());
+        // If parentId is provided, validate parent comment exists
+        if (parentId != null && !parentId.isEmpty()) {
+            commentRepository.findById(parentId)
+                    .orElseThrow(() -> new RuntimeException("Parent comment not found"));
+            logger.info("Creating reply for comment ID: {} by user: {}", parentId, user.getEmail());
+        } else {
+            logger.info("Creating comment for post ID: {} by user: {}", postId, user.getEmail());
+        }
         
         // Create comment
         Comment comment = Comment.builder()
@@ -42,7 +48,8 @@ public class CommentService {
                 .postId(postId)
                 .userId(userId)
                 .userName(user.getName())
-                .userProfilePic("https://randomuser.me/api/portraits/men/1.jpg") // Default profile pic
+                //.userProfilePic(user.getProfilePicture() != null ? user.getProfilePicture() : "https://randomuser.me/api/portraits/men/1.jpg")
+                .parentId(parentId) // Set parentId (null for top-level comments)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -57,6 +64,11 @@ public class CommentService {
         logger.info("Comment created successfully with ID: {}", savedComment.getId());
         
         return savedComment;
+    }
+    
+    // Overload for backward compatibility
+    public Comment createComment(String postId, String userId, String content) {
+        return createComment(postId, userId, content, null);
     }
     
     // Get all comments for a post

@@ -1,4 +1,3 @@
-
 package com.growthive.backend.model;
 
 import lombok.*;
@@ -20,6 +19,7 @@ public class Comment {
     private String userId;
     private String userName;
     private String userProfilePic;
+    private String parentId;  // Added for reply functionality
     
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;

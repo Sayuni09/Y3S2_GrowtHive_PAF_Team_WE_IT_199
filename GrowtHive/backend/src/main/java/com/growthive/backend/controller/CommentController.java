@@ -1,5 +1,3 @@
-
-
 package com.growthive.backend.controller;
 
 import com.growthive.backend.model.Comment;
@@ -30,15 +28,16 @@ public class CommentController {
     public ResponseEntity<?> createComment(
             @RequestParam("postId") String postId,
             @RequestParam("content") String content,
+            @RequestParam(value = "parentId", required = false) String parentId,
             @RequestHeader("Authorization") String authHeader) {
         try {
             // Extract user ID from JWT token
             String token = authHeader.substring(7); // Remove "Bearer " prefix
             String userId = jwtUtils.getUserIdFromJwtToken(token);
             
-            logger.info("Creating comment for post ID: {} by user ID: {}", postId, userId);
+            logger.info("Creating comment for post ID: {} by user ID: {}, parentId: {}", postId, userId, parentId);
             
-            Comment comment = commentService.createComment(postId, userId, content);
+            Comment comment = commentService.createComment(postId, userId, content, parentId);
             return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(comment);
