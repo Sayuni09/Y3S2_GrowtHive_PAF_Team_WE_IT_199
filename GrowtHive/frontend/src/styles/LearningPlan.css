@@ -463,3 +463,331 @@
     padding: 1.5rem;
   }
 }
+
+/* Form Styles */
+.form-group {
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--black);
+  font-weight: 500;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--silver);
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: var(--white);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--sienna);
+  box-shadow: 0 0 0 2px rgba(140, 97, 64, 0.1);
+}
+
+.progress-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progress-input input {
+  width: 100px;
+}
+
+.progress-input .percentage {
+  color: var(--dim-gray);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.submit-btn {
+  background: var(--sienna);
+  color: var(--white);
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+  background: var(--dark-khaki);
+  transform: translateY(-2px);
+}
+
+.cancel-btn {
+  background: var(--silver);
+  color: var(--black);
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+  background: var(--dim-gray);
+  color: var(--white);
+  transform: translateY(-2px);
+}
+
+/* Status Indicator Styles */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-badge.in-progress {
+  background-color: var(--accent-blue);
+  color: var(--white);
+}
+
+.status-badge.completed {
+  background-color: var(--accent-green);
+  color: var(--white);
+}
+
+.status-hint {
+  color: var(--dim-gray);
+  font-size: 0.9rem;
+}
+
+/* Enhanced Plan Card Styles */
+.plan-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(140, 97, 64, 0.1);
+  background: var(--white);
+  width: calc(33.33% - 1rem);
+  min-width: 300px;
+}
+
+.plan-card .card-header {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(140, 97, 64, 0.1);
+}
+
+.plan-card h3 {
+  color: var(--sienna);
+  font-size: 1.2rem;
+  margin: 1rem 0;
+}
+
+.plan-card p {
+  color: var(--dim-gray);
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.progress-container {
+  height: 8px;
+  background: var(--light-bg);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-blue) 0%, var(--accent-green) 100%);
+  transition: width 0.3s ease;
+}
+
+.progress-indicator {
+  background: var(--accent-blue);
+  color: var(--white);
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.plan-card.completed {
+  background: linear-gradient(135deg, var(--accent-green) 0%, var(--sienna) 100%);
+}
+
+.plan-card.completed h3,
+.plan-card.completed p {
+  color: var(--white);
+}
+
+.plan-card.completed .progress-indicator {
+  background: var(--white);
+  color: var(--accent-green);
+}
+
+.plan-card.completed .card-actions button {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.plan-card.completed .card-actions button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(140, 97, 64, 0.1);
+}
+
+.card-actions button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.card-actions button.delete-btn {
+  background: var(--accent-pink);
+}
+
+.card-actions button.delete-btn:hover {
+  background: #e47f6e;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .plan-card {
+    width: calc(50% - 1rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .plan-card {
+    width: 100%;
+  }
+}
+
+/* Section Headers */
+.plans-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 2rem 0 1.5rem;
+  color: var(--sienna);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.section-icon {
+  color: var(--sienna);
+}
+
+/* Empty States */
+.empty-state {
+  width: 100%;
+  padding: 3rem;
+  text-align: center;
+  background: var(--light-bg);
+  border-radius: 12px;
+  color: var(--dim-gray);
+}
+
+.empty-state svg {
+  color: var(--silver);
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Plans List Container */
+.plans-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Plan Form Section */
+.plan-form-section {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(140, 97, 64, 0.1);
+}
+
+.plan-form-section h3 {
+  color: var(--sienna);
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--light-bg);
+}
+
+.quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 1rem;
+}
+
+.view-toggle button {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--sienna);
+  background: transparent;
+  color: var(--sienna);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-toggle button.active {
+  background: var(--sienna);
+  color: var(--white);
+}
+
+.delete-btn {
+  background: var(--accent-red) !important;
+  color: var(--white) !important;
+}
+
+.delete-btn:hover {
+  background: var(--dark-red) !important;
+}
