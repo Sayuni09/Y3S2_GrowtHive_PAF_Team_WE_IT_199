@@ -517,6 +517,12 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
+.liked-heart.filled {
+  fill: #e74c3c;
+  color: #e74c3c;
+}
+
+
 .liked-post-card {
   position: relative;
 }

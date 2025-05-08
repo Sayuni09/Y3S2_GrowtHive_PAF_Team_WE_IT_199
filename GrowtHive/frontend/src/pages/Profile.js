@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-
   Image, 
   Book, 
   Heart, 
@@ -23,24 +22,32 @@ import { toast } from 'react-toastify';
 import API_BASE_URL from '../services/baseUrl';
 import ProfileHeader from '../components/ProfileHeader';
 import ProfileTabs from '../components/ProfileTabs';
+import LikeService from '../services/LikeService';
 
 function Profile() {
   const navigate = useNavigate();
   
-  // User data state
-  const [userData, setUserData] = useState({
-    id: '',
-    name: 'User',
-    email: '',
-    profilePicture: 'https://randomuser.me/api/portraits/women/44.jpg',
-    coverImage: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80',
-    bio: 'Interior design enthusiast with a passion for Scandinavian aesthetics and sustainable living solutions.',
-    location: 'Colombo, Sri Lanka',
-    website: 'designportfolio.com/emtt',
-    followers: 128,
-    following: 87,
-    joinedDate: 'April 2023'
-  });
+    // User data state
+    const [userData, setUserData] = useState({
+      id: '',
+      name: 'User',
+      email: '',
+      profilePicture: 'https://randomuser.me/api/portraits/women/44.jpg',
+      coverImage: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80',
+      bio: 'Interior design enthusiast with a passion for Scandinavian aesthetics and sustainable living solutions.',
+      location: 'Colombo, Sri Lanka',
+      website: 'designportfolio.com/emtt',
+      followers: 128,
+      following: 87,
+      joinedDate: 'April 2023',
+      // Initialize activity summary to prevent undefined errors
+      activitySummary: {
+        postsCreated: 0,
+        postsLiked: 0,
+        commentsReceived: 0,
+        designChallenges: 0
+      }
+    });
 
   // States for the component
   const [posts, setPosts] = useState([]);
@@ -60,7 +67,8 @@ function Profile() {
     followers: [],
     following: []
   });
-  const [editedPostData, setEditedPostData] = useState({
+
+   const [editedPostData, setEditedPostData] = useState({
     title: '',
     content: '',
     category: '',
@@ -72,13 +80,25 @@ function Profile() {
   const [confirmDeleteModalOpen, setConfirmDeleteModalOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
 
+    // Function to correctly count comments
+    const getCommentCount = (post) => {
+      if (post.commentCount !== undefined) {
+        return post.commentCount;
+      }
+      
+      if (!post || !post.comments || !Array.isArray(post.comments)) {
+        return 0;
+      }
+      
+      return post.comments.length;
+    };
+
   useEffect(() => {
     fetchUserData();
     fetchUserPosts();
     fetchLikedPosts();
     
-    // Connections data (mock for now)
-    setConnections({
+  setConnections({
       followers: [
         { id: 1, name: 'Sarah Johnson', image: 'https://randomuser.me/api/portraits/women/22.jpg', isFollowing: true },
         { id: 2, name: 'Michael Chen', image: 'https://randomuser.me/api/portraits/men/32.jpg', isFollowing: false },
@@ -107,7 +127,8 @@ function Profile() {
           ...prevData,
           id: parsedUser.id || '',
           name: parsedUser.name || 'User',
-          email: parsedUser.email || ''
+          email: parsedUser.email || '',
+          profilePicture: parsedUser.profilePicture || prevData.profilePicture
         }));
       } catch (err) {
         console.error('Error parsing stored user data:', err);
@@ -115,96 +136,137 @@ function Profile() {
     }
   };
 
-  // Fetch user posts from backend
-  const fetchUserPosts = async () => {
-    setIsLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const userObject = JSON.parse(localStorage.getItem('user'));
-      
-      if (!token || !userObject) {
-        navigate('/');
-        return;
-      }
-      
-      const response = await axios.get(`${API_BASE_URL}/api/auth/posts/user/${userObject.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      // Transform backend posts to match frontend format
-      const transformedPosts = response.data.map(post => ({
-        id: post.id,
-        title: post.title,
-        content: post.content,
-        image: post.mediaFiles && post.mediaFiles.length > 0 ? 
-               (post.mediaFiles[0].type === 'image' ? `${API_BASE_URL}${post.mediaFiles[0].url}` : null) : null,
-        mediaFiles: post.mediaFiles || [],
-        category: post.category || '',
-        visibility: post.visibility || 'public',
-        likes: post.likes || 0,
-        comments: post.comments || [],
-        timestamp: new Date(post.createdAt).toLocaleDateString('en-US', {
-          month: 'long', day: 'numeric', year: 'numeric'
-        }),
-        showComments: false
-      }));
-      
-      setPosts(transformedPosts);
-    } catch (error) {
-      console.error('Error fetching user posts:', error);
-      toast.error('Failed to load your posts');
-    } finally {
-      setIsLoading(false);
+ // Fetch user posts from backend
+ const fetchUserPosts = async () => {
+  setIsLoading(true);
+  try {
+    const token = localStorage.getItem('token');
+    const userObject = JSON.parse(localStorage.getItem('user'));
+    
+    if (!token || !userObject) {
+      navigate('/');
+      return;
     }
-  };
-
-  // Fetch liked posts (using mock data for now)
-  const fetchLikedPosts = async () => {
-    // Mock data for liked posts
-    setLikedPosts([
-      {
-        id: 101,
-        user: { name: 'Julia Martinez', profilePic: 'https://randomuser.me/api/portraits/women/22.jpg' },
-        title: 'Scandinavian Design Principles',
-        content: 'Exploring the clean lines and functional elegance of Scandinavian interior design. Here are my top takeaways from renovating my living space...',
-        image: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-        likes: 128,
-        comments: [],
-        timestamp: '3 days ago',
-        showComments: false
-      },
-      {
-        id: 102,
-        user: { name: 'Robert Lee', profilePic: 'https://randomuser.me/api/portraits/men/32.jpg' },
-        title: 'Indoor Plants for Better Air Quality',
-        content: 'Did you know that certain houseplants can significantly improve your home\'s air quality? Here\'s my curated list of low-maintenance plants that purify your space...',
-        image: 'https://images.unsplash.com/photo-1556702571-3e11dd2b1a92?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-        likes: 245,
-        comments: [],
-        timestamp: '1 week ago',
-        showComments: false
+    
+    const response = await axios.get(`${API_BASE_URL}/api/auth/posts/user/${userObject.id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
       }
-    ]);
-  };
+    });
+    
+    // Transform backend posts to match frontend format
+    const transformedPosts = response.data.map(post => ({
+      id: post.id,
+      title: post.title,
+      content: post.content,
+      image: post.mediaFiles && post.mediaFiles.length > 0 ? 
+             (post.mediaFiles[0].type === 'image' ? `${API_BASE_URL}${post.mediaFiles[0].url}` : null) : null,
+      mediaFiles: post.mediaFiles || [],
+      category: post.category || '',
+      visibility: post.visibility || 'public',
+      likes: post.likes || 0,
+      userLiked: post.userLiked || false,
+      commentCount: post.comments || 0,
+      comments: Array.isArray(post.comments) ? post.comments : [],
+      timestamp: new Date(post.createdAt).toLocaleDateString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric'
+      }),
+      showComments: false
+    }));
+    
+    setPosts(transformedPosts);
+  
+    // Fetch like status for each post
+    try {
+      const postIds = transformedPosts.map(post => post.id);
+      const likeStatuses = await LikeService.batchGetLikeStatus(postIds);
+      
+      // Update posts with like information
+      setPosts(posts => posts.map(post => {
+        const status = likeStatuses[post.id];
+        return status ? {...post, userLiked: status.liked, likes: status.likeCount} : post;
+      }));
+    } catch (error) {
+      console.error('Error fetching like statuses:', error);
+    }
+    
+  } catch (error) {
+    console.error('Error fetching user posts:', error);
+    toast.error('Failed to load your posts');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+
+
+// Fetch liked posts from backend
+const fetchLikedPosts = async () => {
+  setIsLoading(true);
+  try {
+    const response = await LikeService.getUserLikedPosts();
+    
+    // Transform the posts from the API to match frontend format
+    const transformedLikedPosts = response.likedPosts.map(post => ({
+      id: post.id,
+      user: { 
+        name: post.userName || 'Anonymous User', 
+        profilePic: post.userProfilePic || 'https://randomuser.me/api/portraits/lego/1.jpg' 
+      },
+      title: post.title || '',
+      content: post.content || '',
+      image: post.mediaFiles && post.mediaFiles.length > 0 ? 
+        (post.mediaFiles[0].type === 'image' ? `${API_BASE_URL}${post.mediaFiles[0].url}` : null) : null,
+      mediaFiles: post.mediaFiles || [],
+      likes: post.likeCount || 0,
+      userLiked: true, // These are posts the user has liked
+      
+      // The key fix: Ensure commentCount is correctly set regardless of how comments is structured
+      commentCount: typeof post.comments === 'number' 
+        ? post.comments 
+        : (Array.isArray(post.comments) ? post.comments.length : 0),
+      
+      comments: Array.isArray(post.comments) ? post.comments : [],
+      timestamp: new Date(post.createdAt).toLocaleDateString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric'
+      }),
+      showComments: false
+    }));
+    
+    setLikedPosts(transformedLikedPosts);
+  } catch (error) {
+    console.error('Error fetching liked posts:', error);
+    toast.error('Failed to load your liked posts');
+    // Fallback to empty array if API fails
+    setLikedPosts([]);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
 
   // Filter followers based on search input
   useEffect(() => {
-    setFilteredFollowers(
-      connections.followers.filter(follower => 
-        follower.name.toLowerCase().includes(followerSearch.toLowerCase())
-      )
-    );
+    if (connections.followers) {
+      setFilteredFollowers(
+        connections.followers.filter(follower => 
+          follower.name.toLowerCase().includes(followerSearch.toLowerCase())
+        )
+      );
+    }
   }, [followerSearch, connections.followers]);
 
   // Filter following based on search input
   useEffect(() => {
-    setFilteredFollowing(
-      connections.following.filter(following => 
-        following.name.toLowerCase().includes(followingSearch.toLowerCase())
-      )
-    );
+    if (connections.following) {
+      setFilteredFollowing(
+        connections.following.filter(following => 
+          following.name.toLowerCase().includes(followingSearch.toLowerCase())
+        )
+      );
+    }
   }, [followingSearch, connections.following]);
 
   // Handle updating user profile
@@ -439,106 +501,97 @@ function Profile() {
   };
 
   // Add a new comment to a post
-  const addComment = (postId, commentText, isLikedPost = false) => {
-    if (!commentText.trim()) return;
-    
-    const newCommentObj = {
-      id: Date.now(),
-      user: { 
-        name: userData.name, 
-        profilePic: userData.profilePicture 
-      },
-      content: commentText,
-      likes: 0,
-      time: 'Just now',
-      replies: []
-    };
-    
-    if (isLikedPost) {
-      const updatedPosts = likedPosts.map(post => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            comments: [...post.comments, newCommentObj]
-          };
-        }
-        return post;
-      });
-      
-      setLikedPosts(updatedPosts);
-    } else {
-      const updatedPosts = posts.map(post => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            comments: [...post.comments, newCommentObj]
-          };
-        }
-        return post;
-      });
-      
-      setPosts(updatedPosts);
-    }
+const addComment = (postId, commentText, isLikedPost = false) => {
+  if (!commentText.trim()) return;
+  
+  const newCommentObj = {
+    id: Date.now(), // Temporary ID, will be replaced when comments are refreshed
+    userId: userData.id,
+    parentId: null,
+    user: { 
+      name: userData.name, 
+      profilePic: userData.profilePicture 
+    },
+    content: commentText,
+    likes: 0,
+    time: 'Just now',
+    replies: []
   };
+  
+  if (isLikedPost) {
+    setLikedPosts(likedPosts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          comments: [...post.comments, newCommentObj],
+          commentCount: (post.commentCount || 0) + 1
+        };
+      }
+      return post;
+    }));
+  } else {
+    setPosts(posts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          comments: [...post.comments, newCommentObj],
+          commentCount: (post.commentCount || 0) + 1
+        };
+      }
+      return post;
+    }));
+  }
+  
+  return true;
+};
 
-  // Add a reply to a comment
-  const addReply = (postId, commentId, replyContent, isLikedPost = false) => {
-    if (!replyContent.trim()) return;
-    
-    const newReply = {
-      id: Date.now(),
-      user: { 
-        name: userData.name, 
-        profilePic: userData.profilePicture 
-      },
-      content: replyContent,
-      likes: 0,
-      time: 'Just now'
-    };
-    
-    if (isLikedPost) {
-      setLikedPosts(likedPosts.map(post => {
-        if (post.id === postId) {
-          const updatedComments = post.comments.map(comment => {
-            if (comment.id === commentId) {
-              return {
-                ...comment,
-                replies: [...(comment.replies || []), newReply]
-              };
-            }
-            return comment;
-          });
-          
-          return {
-            ...post,
-            comments: updatedComments
-          };
-        }
-        return post;
-      }));
-    } else {
-      setPosts(posts.map(post => {
-        if (post.id === postId) {
-          const updatedComments = post.comments.map(comment => {
-            if (comment.id === commentId) {
-              return {
-                ...comment,
-                replies: [...(comment.replies || []), newReply]
-              };
-            }
-            return comment;
-          });
-          
-          return {
-            ...post,
-            comments: updatedComments
-          };
-        }
-        return post;
-      }));
-    }
+
+ // Add a reply to a comment
+const addReply = (postId, commentId, replyContent, isLikedPost = false) => {
+  if (!replyContent.trim()) return;
+  
+  const newReply = {
+    id: Date.now(), // Temporary ID, will be replaced when comments are refreshed
+    userId: userData.id,
+    parentId: commentId,
+    user: { 
+      name: userData.name, 
+      profilePic: userData.profilePicture 
+    },
+    content: replyContent,
+    likes: 0,
+    time: 'Just now',
+    replies: []
   };
+  
+  if (isLikedPost) {
+    setLikedPosts(likedPosts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          comments: [...post.comments, newReply],
+          commentCount: (post.commentCount || 0) + 1
+        };
+      }
+      return post;
+    }));
+  } else {
+    setPosts(posts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          comments: [...post.comments, newReply],
+          commentCount: (post.commentCount || 0) + 1
+        };
+      }
+      return post;
+    }));
+  }
+  
+  return true;
+};
 
+  
   // Like a comment
   const likeComment = (postId, commentId, replyId = null, isLikedPost = false) => {
     if (isLikedPost) {
@@ -596,23 +649,58 @@ function Profile() {
     }
   };
 
-  // Like a post
-  const likePost = (postId, isLikedPost = false) => {
+ // Like a post
+ const likePost = async (postId, isLikedPost = false) => {
+  try {
+    const response = await LikeService.toggleLike(postId);
+    const { liked, likeCount } = response;
+    
     if (isLikedPost) {
+      // Update in likedPosts array
       setLikedPosts(likedPosts.map(post =>
-        post.id === postId ? { ...post, likes: post.likes + 1 } : post
+        post.id === postId ? { ...post, likes: likeCount, userLiked: liked } : post
       ));
     } else {
+      // Update in posts array
       setPosts(posts.map(post =>
-        post.id === postId ? { ...post, likes: post.likes + 1 } : post
+        post.id === postId ? { ...post, likes: likeCount, userLiked: liked } : post
       ));
     }
-  };
+    
+    // Update activity summary safely
+    setUserData(prevData => {
+      // Check if activitySummary exists
+      const currentLikes = prevData.activitySummary?.postsLiked || 0;
+      
+      return {
+        ...prevData,
+        // Create activitySummary if it doesn't exist
+        activitySummary: {
+          ...(prevData.activitySummary || {}),
+          postsLiked: liked ? currentLikes + 1 : Math.max(0, currentLikes - 1)
+        }
+      };
+    });
+    
+    // If unliked and we're in the liked posts tab, refresh the liked posts
+    if (!liked && isLikedPost) {
+      // Optionally remove from the current list immediately
+      setLikedPosts(likedPosts.filter(post => post.id !== postId));
+      // Or refresh the whole list
+      fetchLikedPosts();
+    }
+  } catch (error) {
+    console.error('Error toggling like:', error);
+    toast.error('Failed to update like status. Please try again.');
+  }
+};
 
-  // Unlike a post (remove from liked posts)
-  const unlikePost = (postId) => {
-    setLikedPosts(likedPosts.filter(post => post.id !== postId));
-  };
+
+
+  // // Unlike a post (remove from liked posts)
+  // const unlikePost = (postId) => {
+  //   setLikedPosts(likedPosts.filter(post => post.id !== postId));
+  // };
 
   return (
     <div className="profile-page-container">
@@ -687,7 +775,7 @@ function Profile() {
           </div>
         </header>
 
-        {/* Notifications Panel - Shown when clicked */}
+        {/* Notifications Panel */}
         {showNotifications && (
           <div className="notifications-panel">
             <div className="notifications-header">
@@ -746,29 +834,30 @@ function Profile() {
 
           {/* Profile Tabs Component */}
           <ProfileTabs
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            posts={posts}
-            likedPosts={likedPosts}
-            isLoading={isLoading}
-            userData={userData}
-            followerSearch={followerSearch}
-            setFollowerSearch={setFollowerSearch}
-            followingSearch={followingSearch}
-            setFollowingSearch={setFollowingSearch}
-            filteredFollowers={filteredFollowers}
-            filteredFollowing={filteredFollowing}
-            connections={connections}
-            handleFollowToggle={handleFollowToggle}
-            handleEditPost={handleEditPost}
-            handleDeletePrompt={handleDeletePrompt}
-            toggleComments={toggleComments}
-            likePost={likePost}
-            unlikePost={unlikePost}
-            addComment={addComment}
-            addReply={addReply}
-            likeComment={likeComment}
-          />
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        posts={posts}
+        likedPosts={likedPosts}
+        isLoading={isLoading}
+        userData={userData}
+        followerSearch={followerSearch}
+        setFollowerSearch={setFollowerSearch}
+        followingSearch={followingSearch}
+        setFollowingSearch={setFollowingSearch}
+        filteredFollowers={filteredFollowers}
+        filteredFollowing={filteredFollowing}
+        connections={connections}
+        handleFollowToggle={handleFollowToggle}
+        handleEditPost={handleEditPost}
+        handleDeletePrompt={handleDeletePrompt}
+        toggleComments={toggleComments}
+        likePost={likePost}
+        unlikePost={(postId) => likePost(postId, true)} // Use likePost for unlike as well
+        addComment={addComment}
+        addReply={addReply}
+        likeComment={likeComment}
+        getCommentCount={getCommentCount}
+      />
         </div>
       </div>
 
