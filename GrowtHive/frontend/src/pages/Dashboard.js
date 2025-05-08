@@ -9,8 +9,10 @@ import CommentSection from '../components/CommentSection';
 import MediaGallery from '../components/MediaGallery';
 import PostMediaModal from '../components/PostMediaModal';
 import LoginFormService from '../services/LoginFormService';
+import LikeService from '../services/LikeService';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+
 import API_BASE_URL from '../services/baseUrl';
 
 function Dashboard() {
@@ -39,6 +41,7 @@ function Dashboard() {
 
   // Posts state
   const [posts, setPosts] = useState([]);
+  const [likedPosts, setLikedPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('feed');
   const [showNotifications, setShowNotifications] = useState(false);
@@ -48,16 +51,24 @@ function Dashboard() {
   const [activeMediaPost, setActiveMediaPost] = useState(null);
   const [initialMediaIndex, setInitialMediaIndex] = useState(0);
 
-  // FIXED FUNCTION: Get the total comment count for a post including parent-child relationships
-  const getCommentCount = (post) => {
-    if (!post.comments || !Array.isArray(post.comments)) {
-      return 0;
-    }
-    
-    // Count all comments for this post, regardless of parent/child relationship
-    // since in CommentSection.js the display is just showing comments.length
-    return post.comments.length;
-  };
+  // Improved function to correctly count all comments for a post, including replies
+  // Correctly count all comments for a post, including replies
+const getCommentCount = (post) => {
+  // If the post has a commentCount field from backend, use it (most reliable)
+  if (post.commentCount !== undefined) {
+    return post.commentCount;
+  }
+  
+  // Fallback: count all comments in the array (including replies)
+  if (!post || !post.comments || !Array.isArray(post.comments)) {
+    return 0;
+  }
+  
+  // In your data structure, all comments (including replies) are stored 
+  // in the flat comments array with parentId references
+  return post.comments.length;
+};
+
 
   // Helper function to format timestamps
   const formatTimeAgo = (timestamp) => {
@@ -84,7 +95,7 @@ function Dashboard() {
     }
   };
 
-  // Function to fetch all posts - wrapped with useCallback to fix the warning
+  // Function to fetch all posts
   const fetchAllPosts = useCallback(async () => {
     try {
       setLoading(true);
@@ -96,46 +107,63 @@ function Dashboard() {
       });
 
       // Map API response to the format expected by the component
-      // and sort posts by creation date (newest first)
       const formattedPosts = response.data
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .map(post => ({
-          id: post.id,
-          user: {
-            name: post.userName || 'Anonymous User',
-            profilePic: post.userProfilePic || 'https://randomuser.me/api/portraits/lego/1.jpg'
-          },
-          title: post.title || '',
-          content: post.content || '',
-          // Handle media files properly for gallery display
-          mediaFiles: Array.isArray(post.mediaFiles) ? post.mediaFiles : [],
-          image: post.mediaFiles && post.mediaFiles.length > 0 ? post.mediaFiles[0].url : null,
-          likes: post.likes || 0,
-          comments: Array.isArray(post.comments) ? post.comments.map(comment => ({
-            id: comment.id,
-            userId: comment.userId,
-            parentId: comment.parentId, // Make sure parentId is included here
-            user: {
-              name: comment.userName || 'Anonymous',
-              profilePic: comment.userProfilePic || 'https://randomuser.me/api/portraits/lego/1.jpg'
-            },
-            content: comment.content,
-            likes: comment.likes || 0,
-            time: formatTimeAgo(comment.createdAt),
-            replies: []
-          })) : [],
-          timestamp: formatTimeAgo(post.createdAt),
-          createdAt: post.createdAt, // Keep original date for sorting
-          showComments: false
-        }));
+  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  .map(post => ({
+    id: post.id,
+    user: {
+      name: post.userName || 'Anonymous User',
+      profilePic: post.userProfilePic || 'https://randomuser.me/api/portraits/lego/1.jpg'
+    },
+    title: post.title || '',
+    content: post.content || '',
+    mediaFiles: Array.isArray(post.mediaFiles) ? post.mediaFiles : [],
+    image: post.mediaFiles && post.mediaFiles.length > 0 ? post.mediaFiles[0].url : null,
+    likes: post.likes || 0,
+    userLiked: post.userLiked || false,
+    // Use comment count from backend if available
+    commentCount: post.comments || 0,
+    comments: Array.isArray(post.comments) ? post.comments.map(comment => ({
+      id: comment.id,
+      userId: comment.userId,
+      parentId: comment.parentId,
+      user: {
+        name: comment.userName || 'Anonymous',
+        profilePic: comment.userProfilePic || 'https://randomuser.me/api/portraits/lego/1.jpg'
+      },
+      content: comment.content,
+      likes: comment.likes || 0,
+      time: formatTimeAgo(comment.createdAt),
+      replies: []
+    })) : [],
+    timestamp: formatTimeAgo(post.createdAt),
+    createdAt: post.createdAt,
+    showComments: false
+  }));
 
-      setPosts(formattedPosts);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      toast.error('Failed to load posts. Please try again later.');
-      setLoading(false);
-    }
+
+  setPosts(formattedPosts);
+    
+  // Fetch like status for each post
+  try {
+    const postIds = formattedPosts.map(post => post.id);
+    const likeStatuses = await LikeService.batchGetLikeStatus(postIds);
+    
+    // Update posts with like information
+    setPosts(posts => posts.map(post => {
+      const status = likeStatuses[post.id];
+      return status ? {...post, userLiked: status.liked, likes: status.likeCount} : post;
+    }));
+  } catch (error) {
+    console.error('Error fetching like statuses:', error);
+  }
+  
+  setLoading(false);
+} catch (error) {
+  console.error('Error fetching posts:', error);
+  toast.error('Failed to load posts. Please try again later.');
+  setLoading(false);
+}
   }, []);
 
   // Check for token in URL parameters on component mount
@@ -145,11 +173,9 @@ function Dashboard() {
     const userInfo = params.get('user');
     
     if (token) {
-      // Store token in localStorage
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Store user info if available
       if (userInfo) {
         try {
           const user = JSON.parse(decodeURIComponent(userInfo));
@@ -159,10 +185,7 @@ function Dashboard() {
         }
       }
       
-      // Clean the URL by removing the query parameters
       navigate('/dashboard', { replace: true });
-      
-      // Show a success toast notification
       toast.success('Successfully logged in with Google!');
     }
   }, [navigate]);
@@ -185,7 +208,6 @@ function Dashboard() {
       }
     }
     
-    // Fetch posts when component mounts
     fetchAllPosts();
   }, [fetchAllPosts]);
 
@@ -242,14 +264,13 @@ function Dashboard() {
       },
       title: newPost.title,
       content: newPost.content,
-      // Handle media files for the new post
       mediaFiles: newPost.mediaFiles || [],
       image: newPost.mediaFiles && newPost.mediaFiles.length > 0 ? 
-            (newPost.mediaFiles[0].type === 'image' ? newPost.mediaFiles[0].url : null) : null,
+        (newPost.mediaFiles[0].type === 'image' ? newPost.mediaFiles[0].url : null) : null,
       likes: 0,
       comments: [],
       timestamp: 'Just now',
-      createdAt: new Date().toISOString(), // Add current date for sorting
+      createdAt: new Date().toISOString(),
       showComments: false
     };
     
@@ -264,69 +285,85 @@ function Dashboard() {
     ));
   };
 
-  // Add a new comment to a post
-  const addComment = (postId, commentText) => {
-    if (!commentText.trim()) return;
-    
-    const updatedPosts = posts.map(post => {
-      if (post.id === postId) {
-        const newCommentObj = {
-          id: Date.now(),
-          userId: userData.id, // Add user ID for ownership
-          parentId: null, // Top-level comment has no parent
-          user: { 
-            name: userData.name, 
-            profilePic: userData.profilePicture 
-          },
-          content: commentText,
-          likes: 0,
-          time: 'Just now',
-          replies: []
-        };
-        
-        return {
-          ...post,
-          comments: [...post.comments, newCommentObj]
-        };
-      }
-      return post;
-    });
-    
-    setPosts(updatedPosts);
-  };
+// Add a new comment to a post
+const addComment = (postId, commentText) => {
+  if (!commentText.trim()) return;
+  
+  const updatedPosts = posts.map(post => {
+    if (post.id === postId) {
+      const newCommentObj = {
+        id: Date.now(),
+        userId: userData.id,
+        parentId: null,
+        user: { 
+          name: userData.name, 
+          profilePic: userData.profilePicture 
+        },
+        content: commentText,
+        likes: 0,
+        time: 'Just now',
+        replies: []
+      };
+      
+      return {
+        ...post,
+        comments: [...post.comments, newCommentObj],
+        commentCount: (post.commentCount || 0) + 1
+      };
+    }
+    return post;
+  });
+  
+  setPosts(updatedPosts);
+};
 
-  // Add a reply to a comment
-  const addReply = (postId, commentId, replyContent) => {
-    if (!replyContent.trim()) return;
-    
-    const updatedPosts = posts.map(post => {
+// Similar update for addReply function
+
+
+   // Add a reply to a comment
+const addReply = (postId, commentId, replyContent, isLikedPost = false) => {
+  if (!replyContent.trim()) return;
+  
+  const newReply = {
+    id: Date.now(), // Temporary ID, will be replaced when comments are refreshed
+    userId: userData.id,
+    parentId: commentId,
+    user: { 
+      name: userData.name, 
+      profilePic: userData.profilePicture 
+    },
+    content: replyContent,
+    likes: 0,
+    time: 'Just now',
+    replies: []
+  };
+  
+  if (isLikedPost) {
+    setLikedPosts(likedPosts.map(post => {
       if (post.id === postId) {
-        // Create the reply as a new comment with parentId
-        const newReply = {
-          id: Date.now(),
-          userId: userData.id,
-          parentId: commentId, // This marks it as a reply
-          user: { 
-            name: userData.name, 
-            profilePic: userData.profilePicture 
-          },
-          content: replyContent,
-          likes: 0,
-          time: 'Just now',
-          replies: []
-        };
-        
-        // Add the new reply to the comments array
         return {
           ...post,
-          comments: [...post.comments, newReply]
+          comments: [...post.comments, newReply],
+          commentCount: (post.commentCount || 0) + 1
         };
       }
       return post;
-    });
-    
-    setPosts(updatedPosts);
-  };
+    }));
+  } else {
+    setPosts(posts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          comments: [...post.comments, newReply],
+          commentCount: (post.commentCount || 0) + 1
+        };
+      }
+      return post;
+    }));
+  }
+  
+  return true;
+};
 
   // Like a comment
   const likeComment = (postId, commentId, replyId = null) => {
@@ -334,21 +371,14 @@ function Dashboard() {
       if (post.id === postId) {
         const updatedComments = post.comments.map(comment => {
           if (replyId) {
-            // Liking a reply
-            if (comment.id === commentId) {
-              const updatedReplies = comment.replies.map(reply => 
-                reply.id === replyId ? { ...reply, likes: reply.likes + 1 } : reply
-              );
-              return { ...comment, replies: updatedReplies };
-            }
-            return comment;
-          } else {
-            // Liking a comment
-            if (comment.id === commentId) {
+            // This is handling replies, but with the flat structure, we need a different approach
+            if (comment.id === replyId) {
               return { ...comment, likes: comment.likes + 1 };
             }
-            return comment;
+          } else if (comment.id === commentId) {
+            return { ...comment, likes: comment.likes + 1 };
           }
+          return comment;
         });
         
         return { ...post, comments: updatedComments };
@@ -358,11 +388,41 @@ function Dashboard() {
   };
 
   // Like a post
-  const likePost = (postId) => {
+const likePost = async (postId) => {
+  try {
+    const response = await LikeService.toggleLike(postId);
+    const { liked, likeCount } = response;
+    
+    // Update the post in the posts state
     setPosts(posts.map(post =>
-      post.id === postId ? { ...post, likes: post.likes + 1 } : post
+      post.id === postId ? { ...post, likes: likeCount, userLiked: liked } : post
     ));
-  };
+    
+    // Update activity summary if user liked the post
+    if (liked) {
+      setUserData(prevData => ({
+        ...prevData,
+        activitySummary: {
+          ...prevData.activitySummary,
+          postsLiked: prevData.activitySummary.postsLiked + 1
+        }
+      }));
+    } else {
+      // Decrease if unliked and count > 0
+      setUserData(prevData => ({
+        ...prevData,
+        activitySummary: {
+          ...prevData.activitySummary,
+          postsLiked: Math.max(0, prevData.activitySummary.postsLiked - 1)
+        }
+      }));
+    }
+  } catch (error) {
+    console.error('Error toggling like:', error);
+    toast.error('Failed to update like status. Please try again.');
+  }
+};
+
 
   return (
     <div className="dashboard-container">
@@ -442,7 +502,7 @@ function Dashboard() {
           </div>
         </header>
 
-        {/* Notifications Panel - Shown when clicked */}
+        {/* Notifications Panel */}
         {showNotifications && (
           <div className="notifications-panel">
             <div className="notifications-header">
@@ -542,7 +602,6 @@ function Dashboard() {
                   <h3 className="post-title">{post.title}</h3>
                   <p className="post-content">{post.content}</p>
                   
-                  {/* Replace single image display with MediaGallery component */}
                   {post.mediaFiles && post.mediaFiles.length > 0 && (
                     <MediaGallery 
                       mediaFiles={post.mediaFiles} 
@@ -552,10 +611,10 @@ function Dashboard() {
                   )}
                   
                   <div className="post-actions">
-                    <div className="action-button" onClick={() => likePost(post.id)}>
-                      <Heart size={20} />
-                      <span>{post.likes}</span>
-                    </div>
+                  <div className="action-button" onClick={() => likePost(post.id)}>
+                    <Heart size={20} className={post.userLiked ? "liked-heart" : ""} />
+                    <span>{post.likes}</span>
+                  </div>
                     <div 
                       className={`action-button ${post.showComments ? 'active' : ''}`} 
                       onClick={() => toggleComments(post.id)}
@@ -565,7 +624,6 @@ function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Comment Section Component */}
                   {post.showComments && (
                     <CommentSection
                       post={post}
@@ -583,7 +641,7 @@ function Dashboard() {
         </section>
       </div>
 
-      {/* Right Sidebar - Quick Links & Suggested Content */}
+      {/* Right Sidebar */}
       <div className="dashboard-right-sidebar">
         <div className="quick-actions">
           <h3>Quick Actions</h3>

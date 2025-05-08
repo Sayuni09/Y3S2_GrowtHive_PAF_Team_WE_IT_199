@@ -286,6 +286,12 @@ body {
   padding-top: 0.25rem;
 }
 
+.liked-heart {
+  fill: #e74c3c;
+  color: #e74c3c;
+}
+
+
 .notification-item.like .notification-icon {
   color: #E57373;
 }

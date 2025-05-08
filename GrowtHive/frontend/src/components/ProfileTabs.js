@@ -23,24 +23,23 @@ function ProfileTabs({
   handleDeletePrompt,
   toggleComments,
   likePost,
-  unlikePost,
   addComment,
   addReply,
-  likeComment
+  likeComment,
+  getCommentCount
 }) {
   const [activeMediaPost, setActiveMediaPost] = useState(null);
   const [initialMediaIndex, setInitialMediaIndex] = useState(0);
 
-  // Handle opening the media modal
   const openMediaModal = (post, index = 0) => {
     setActiveMediaPost(post);
     setInitialMediaIndex(index);
   };
 
-  // Handle closing the media modal
   const closeMediaModal = () => {
     setActiveMediaPost(null);
   };
+
 
   return (
     <div className="profile-content">
@@ -68,8 +67,8 @@ function ProfileTabs({
         </button>
       </div>
 
-      {/* Tab Content */}
-      <div className="tab-content">
+ {/* Tab Content */}
+ <div className="tab-content">
         {/* Posts Tab */}
         {activeTab === 'posts' && (
           <div className="posts-grid">
@@ -107,8 +106,14 @@ function ProfileTabs({
                         <span className="post-category">{post.category}</span>
                       )}
                       <div className="post-stats">
-                        <span className="stat" onClick={() => likePost(post.id)}>
-                          <Heart size={16} />
+                        <span 
+                          className="stat" 
+                          onClick={() => likePost(post.id)}
+                        >
+                          <Heart 
+                            size={16} 
+                            className={post.userLiked ? "liked-heart filled" : ""} 
+                          />
                           {post.likes}
                         </span>
                         <span 
@@ -116,7 +121,7 @@ function ProfileTabs({
                           onClick={() => toggleComments(post.id)}
                         >
                           <MessageSquare size={16} />
-                          {post.comments.length}
+                          {getCommentCount(post)}
                         </span>
                       </div>
                     </div>
@@ -134,8 +139,8 @@ function ProfileTabs({
                     )}
                   </div>
                   
-                  {/* Post media - Use MediaGallery component instead of simple image */}
-                  {post.mediaFiles && post.mediaFiles.length > 0 && (
+             {/* Post media */}
+             {post.mediaFiles && post.mediaFiles.length > 0 && (
                     <MediaGallery 
                       mediaFiles={post.mediaFiles} 
                       API_BASE_URL={API_BASE_URL} 
@@ -146,18 +151,20 @@ function ProfileTabs({
               ))
             ) : (
               <div className="empty-tab-message">
-                <div className="empty-icon">✍️</div>
-                <h3>No posts yet</h3>
-                <p>Share your first post to see it here</p>
-              </div>
-            )}
-          </div>
-        )}
+              <div className="empty-icon">✍️</div>
+              <h3>No posts yet</h3>
+              <p>Share your first post to see it here</p>
+            </div>
+          )}
+        </div>
+      )}
 
-        {/* Liked Posts Tab */}
-        {activeTab === 'liked' && (
+       {/* Liked Posts Tab */}
+       {activeTab === 'liked' && (
           <div className="posts-grid">
-            {likedPosts.length > 0 ? (
+            {isLoading ? (
+              <div className="loading">Loading your liked posts...</div>
+            ) : likedPosts.length > 0 ? (
               likedPosts.map(post => (
                 <div key={post.id} className="post-card liked-post-card">
                   <div className="post-header">
@@ -172,16 +179,23 @@ function ProfileTabs({
                     <p className="post-excerpt">{post.content}</p>
                     <div className="post-meta">
                       <div className="post-stats">
-                        <span className="stat unlike-btn" onClick={() => unlikePost(post.id)}>
-                          <Heart size={16} className="filled" />
-                          <span>Unlike</span>
+                        <span 
+                          className="stat" 
+                          onClick={() => likePost(post.id, true)}
+                        >
+                          <Heart 
+                            size={16} 
+                            className={post.userLiked ? "liked-heart filled" : ""} 
+                          />
+                          {post.likes}
                         </span>
+
                         <span 
                           className={`stat comment-toggle ${post.showComments ? 'active' : ''}`}
                           onClick={() => toggleComments(post.id, true)}
                         >
                           <MessageSquare size={16} />
-                          {post.comments.length}
+                          <span className="comment-count">{getCommentCount(post)}</span>
                         </span>
                       </div>
                     </div>
@@ -198,8 +212,15 @@ function ProfileTabs({
                       />
                     )}
                   </div>
-                  {/* Use MediaGallery for liked posts too */}
-                  {post.image && (
+
+                  {/* Media handling - support both mediaFiles and single image */}
+                  {post.mediaFiles && post.mediaFiles.length > 0 ? (
+                    <MediaGallery 
+                      mediaFiles={post.mediaFiles} 
+                      API_BASE_URL={API_BASE_URL} 
+                      onClick={() => openMediaModal(post)}
+                    />
+                  ) : post.image && (
                     <div className="media-gallery" onClick={() => openMediaModal(post)}>
                       <div className="media-container">
                         <img src={post.image} alt={post.title} className="gallery-media" />
@@ -241,7 +262,7 @@ function ProfileTabs({
                 )}
               </div>
               <div className="connections-list">
-                {filteredFollowers.length > 0 ? (
+                {filteredFollowers && filteredFollowers.length > 0 ? (
                   filteredFollowers.map(follower => (
                     <div key={follower.id} className="connection-card">
                       <div className="connection-info">
@@ -282,7 +303,7 @@ function ProfileTabs({
                 )}
               </div>
               <div className="connections-list">
-                {filteredFollowing.length > 0 ? (
+                {filteredFollowing && filteredFollowing.length > 0 ? (
                   filteredFollowing.map(followed => (
                     <div key={followed.id} className="connection-card">
                       <div className="connection-info">
@@ -306,25 +327,15 @@ function ProfileTabs({
         )}
       </div>
 
-      {/* Media Modal */}
-      {activeMediaPost && activeMediaPost.mediaFiles && activeMediaPost.mediaFiles.length > 0 && (
+    {/* Media Modal */}
+    {activeMediaPost && (
         <PostMediaModal
           isOpen={activeMediaPost !== null}
           onClose={closeMediaModal}
-          mediaFiles={activeMediaPost.mediaFiles}
+          mediaFiles={activeMediaPost.mediaFiles || 
+            (activeMediaPost.image ? [{ type: 'image', url: activeMediaPost.image.replace(API_BASE_URL, '') }] : [])}
           API_BASE_URL={API_BASE_URL}
           initialIndex={initialMediaIndex}
-        />
-      )}
-      
-      {/* Handle liked posts which don't have mediaFiles property */}
-      {activeMediaPost && !activeMediaPost.mediaFiles && activeMediaPost.image && (
-        <PostMediaModal
-          isOpen={activeMediaPost !== null}
-          onClose={closeMediaModal}
-          mediaFiles={[{ type: 'image', url: activeMediaPost.image.replace(API_BASE_URL, '') }]}
-          API_BASE_URL={API_BASE_URL}
-          initialIndex={0}
         />
       )}
     </div>
