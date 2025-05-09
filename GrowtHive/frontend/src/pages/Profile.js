@@ -1,4 +1,5 @@
 // src/pages/Profile.js
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
@@ -39,8 +40,8 @@ function Profile() {
     bio: 'Interior design enthusiast with a passion for Scandinavian aesthetics and sustainable living solutions.',
     location: 'Colombo, Sri Lanka',
     website: 'designportfolio.com/emtt',
-    followers: 128,
-    following: 87,
+    followers: 0,
+    following: 0,
     joinedDate: 'April 2023',
     // Initialize activity summary to prevent undefined errors
     activitySummary: {
@@ -96,14 +97,46 @@ function Profile() {
     if (!post || !post.comments || !Array.isArray(post.comments)) {
       return 0;
     }
-    
     return post.comments.length;
+  };
+
+  // Fetch followers and following counts
+  const fetchFollowCounts = async () => {
+    try {
+      // Get JWT token from localStorage
+      const token = localStorage.getItem('jwt-token') || localStorage.getItem('token');
+      if (!token) return;
+
+      // Fetch all users and check their follow status
+      const response = await axios.get(`${API_BASE_URL}/api/auth/users/search?query=`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data && Array.isArray(response.data)) {
+        // Count users that the current user is following (isFollowing === true)
+        const followingCount = response.data.filter(user => user.isFollowing).length;
+
+        // For followers, we need to make an educated guess since there's no direct API
+        // In this case, we're assuming the backend returns all users except the current one
+        const followersCount = 0; // Set to 0 as default - this should be fetched from backend
+
+        // Update user data with the counts
+        setUserData(prevData => ({
+          ...prevData,
+          following: followingCount,
+          followers: followersCount
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching follow counts:', error);
+    }
   };
 
   useEffect(() => {
     fetchUserData();
     fetchUserPosts();
     fetchLikedPosts();
+    fetchFollowCounts(); // Add this call to fetch follow counts
     
     setConnections({
       followers: [
@@ -139,8 +172,6 @@ function Profile() {
         website: profile.website || prevData.website,
         profilePicture: profile.profilePicture || prevData.profilePicture,
         coverImage: profile.coverImage || prevData.coverImage,
-        followers: profile.followers || prevData.followers,
-        following: profile.following || prevData.following,
         joinedDate: profile.joinedDate ? new Date(profile.joinedDate).toLocaleDateString('en-US', {
           month: 'long', year: 'numeric'
         }) : prevData.joinedDate,
@@ -341,7 +372,6 @@ function Profile() {
       setIsLoading(true);
       
       // First update profile text data
-      // Fix: Remove the variable or prefix with underscore
       await ProfileService.updateProfile({
         name: editedData.name,
         bio: editedData.bio,
