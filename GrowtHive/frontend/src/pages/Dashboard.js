@@ -1,6 +1,7 @@
 // src/pages/Dashboard.js
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Home, User, Bell, Search, PlusCircle, Book, Heart, MessageSquare, Settings, LogOut, Sofa, Trophy } from 'lucide-react';
 import '../styles/Dashboard.css';
 import Modal from '../components/Modal';
@@ -12,18 +13,17 @@ import LoginFormService from '../services/LoginFormService';
 import LikeService from '../services/LikeService';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-
 import API_BASE_URL from '../services/baseUrl';
+import FollowService from '../services/FollowService';
 
 function Dashboard() {
   const navigate = useNavigate();
-  const _location = useLocation();
 
-  // Get user data from localStorage
+  // User data
   const [userData, setUserData] = useState({
     name: 'User',
     email: '',
-    id: '', // Added user ID for checking comment ownership
+    id: '',
     profilePicture: 'https://randomuser.me/api/portraits/women/44.jpg',
     activitySummary: {
       postsCreated: 24,
@@ -46,39 +46,27 @@ function Dashboard() {
   const [activeTab, setActiveTab] = useState('feed');
   const [showNotifications, setShowNotifications] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // Media modal state - add these for media gallery
+
+  // Media modal state
   const [activeMediaPost, setActiveMediaPost] = useState(null);
   const [initialMediaIndex, setInitialMediaIndex] = useState(0);
 
-  // Improved function to correctly count all comments for a post, including replies
-  // Correctly count all comments for a post, including replies
-const getCommentCount = (post) => {
-  // If the post has a commentCount field from backend, use it (most reliable)
-  if (post.commentCount !== undefined) {
-    return post.commentCount;
-  }
-  
-  // Fallback: count all comments in the array (including replies)
-  if (!post || !post.comments || !Array.isArray(post.comments)) {
-    return 0;
-  }
-  
-  // In your data structure, all comments (including replies) are stored 
-  // in the flat comments array with parentId references
-  return post.comments.length;
-};
-
+  // --- Suggested Connections & Search ---
+  const [suggestedUsers, setSuggestedUsers] = useState([]);
+  const [suggestedLoading, setSuggestedLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchDropdown, setSearchDropdown] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const searchInputRef = useRef(null);
 
   // Helper function to format timestamps
   const formatTimeAgo = (timestamp) => {
     if (!timestamp) return 'Recently';
-    
     const now = new Date();
     const date = new Date(timestamp);
     const diffTime = Math.abs(now - date);
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
     if (diffDays === 0) {
       const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
       if (diffHours === 0) {
@@ -95,7 +83,7 @@ const getCommentCount = (post) => {
     }
   };
 
-  // Function to fetch all posts
+  // Fetch all posts
   const fetchAllPosts = useCallback(async () => {
     try {
       setLoading(true);
@@ -106,64 +94,58 @@ const getCommentCount = (post) => {
         }
       });
 
-      // Map API response to the format expected by the component
       const formattedPosts = response.data
-  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-  .map(post => ({
-    id: post.id,
-    user: {
-      name: post.userName || 'Anonymous User',
-      profilePic: post.userProfilePic || 'https://randomuser.me/api/portraits/lego/1.jpg'
-    },
-    title: post.title || '',
-    content: post.content || '',
-    mediaFiles: Array.isArray(post.mediaFiles) ? post.mediaFiles : [],
-    image: post.mediaFiles && post.mediaFiles.length > 0 ? post.mediaFiles[0].url : null,
-    likes: post.likes || 0,
-    userLiked: post.userLiked || false,
-    // Use comment count from backend if available
-    commentCount: post.comments || 0,
-    comments: Array.isArray(post.comments) ? post.comments.map(comment => ({
-      id: comment.id,
-      userId: comment.userId,
-      parentId: comment.parentId,
-      user: {
-        name: comment.userName || 'Anonymous',
-        profilePic: comment.userProfilePic || 'https://randomuser.me/api/portraits/lego/1.jpg'
-      },
-      content: comment.content,
-      likes: comment.likes || 0,
-      time: formatTimeAgo(comment.createdAt),
-      replies: []
-    })) : [],
-    timestamp: formatTimeAgo(post.createdAt),
-    createdAt: post.createdAt,
-    showComments: false
-  }));
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .map(post => ({
+          id: post.id,
+          user: {
+            name: post.userName || 'Anonymous User',
+            profilePic: post.userProfilePic || 'https://randomuser.me/api/portraits/lego/1.jpg'
+          },
+          title: post.title || '',
+          content: post.content || '',
+          mediaFiles: Array.isArray(post.mediaFiles) ? post.mediaFiles : [],
+          image: post.mediaFiles && post.mediaFiles.length > 0 ? post.mediaFiles[0].url : null,
+          likes: post.likes || 0,
+          userLiked: post.userLiked || false,
+          commentCount: post.comments || 0,
+          comments: Array.isArray(post.comments) ? post.comments.map(comment => ({
+            id: comment.id,
+            userId: comment.userId,
+            parentId: comment.parentId,
+            user: {
+              name: comment.userName || 'Anonymous',
+              profilePic: comment.userProfilePic || 'https://randomuser.me/api/portraits/lego/1.jpg'
+            },
+            content: comment.content,
+            likes: comment.likes || 0,
+            time: formatTimeAgo(comment.createdAt),
+            replies: []
+          })) : [],
+          timestamp: formatTimeAgo(post.createdAt),
+          createdAt: post.createdAt,
+          showComments: false
+        }));
 
+      setPosts(formattedPosts);
 
-  setPosts(formattedPosts);
-    
-  // Fetch like status for each post
-  try {
-    const postIds = formattedPosts.map(post => post.id);
-    const likeStatuses = await LikeService.batchGetLikeStatus(postIds);
-    
-    // Update posts with like information
-    setPosts(posts => posts.map(post => {
-      const status = likeStatuses[post.id];
-      return status ? {...post, userLiked: status.liked, likes: status.likeCount} : post;
-    }));
-  } catch (error) {
-    console.error('Error fetching like statuses:', error);
-  }
-  
-  setLoading(false);
-} catch (error) {
-  console.error('Error fetching posts:', error);
-  toast.error('Failed to load posts. Please try again later.');
-  setLoading(false);
-}
+      // Fetch like status for each post
+      try {
+        const postIds = formattedPosts.map(post => post.id);
+        const likeStatuses = await LikeService.batchGetLikeStatus(postIds);
+        setPosts(posts => posts.map(post => {
+          const status = likeStatuses[post.id];
+          return status ? {...post, userLiked: status.liked, likes: status.likeCount} : post;
+        }));
+      } catch (error) {
+        console.error('Error fetching like statuses:', error);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      toast.error('Failed to load posts. Please try again later.');
+      setLoading(false);
+    }
   }, []);
 
   // Check for token in URL parameters on component mount
@@ -171,11 +153,9 @@ const getCommentCount = (post) => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     const userInfo = params.get('user');
-    
     if (token) {
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
       if (userInfo) {
         try {
           const user = JSON.parse(decodeURIComponent(userInfo));
@@ -184,7 +164,6 @@ const getCommentCount = (post) => {
           console.error('Failed to parse user info:', e);
         }
       }
-      
       navigate('/dashboard', { replace: true });
       toast.success('Successfully logged in with Google!');
     }
@@ -207,30 +186,116 @@ const getCommentCount = (post) => {
         console.error('Error parsing stored user data:', err);
       }
     }
-    
     fetchAllPosts();
   }, [fetchAllPosts]);
 
-  // Handle opening the media modal
+  // Fetch 3 recently registered users for Suggested Connections
+  useEffect(() => {
+    const fetchSuggestedUsers = async () => {
+      if (!userData.id) return;
+      setSuggestedLoading(true);
+      try {
+        const token = localStorage.getItem('jwt-token') || localStorage.getItem('token');
+        const res = await axios.get(`${API_BASE_URL}/api/auth/users/search?query=`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        let users = res.data
+          .filter(u => u.id !== userData.id)
+          .sort((a, b) => (b.createdAt && a.createdAt ? new Date(b.createdAt) - new Date(a.createdAt) : 0));
+        if (!users.length || !users[0].createdAt) {
+          users = res.data.filter(u => u.id !== userData.id).slice(-3).reverse();
+        } else {
+          users = users.slice(0, 3);
+        }
+        setSuggestedUsers(users);
+      } catch (e) {
+        setSuggestedUsers([]);
+      }
+      setSuggestedLoading(false);
+    };
+    fetchSuggestedUsers();
+  }, [userData.id]);
+
+  // Follow/unfollow handlers
+  const handleFollow = async (userId, updateListFn) => {
+    if (!userData.id || userId === userData.id) {
+      toast.error("You cannot follow yourself");
+      return;
+    }
+    try {
+      await FollowService.followUser(userId);
+      toast.success('Followed user!');
+      if (updateListFn) updateListFn(userId, true);
+    } catch (e) {
+      toast.error(
+        e?.response?.data?.error ||
+        (e?.response?.data?.message ? e.response.data.message : 'Could not follow user')
+      );
+    }
+  };
+
+
+  // Search Bar with Dropdown
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setSearchDropdown([]);
+      return;
+    }
+    let active = true;
+    setSearchLoading(true);
+    const fetchSearch = async () => {
+      try {
+        const token = localStorage.getItem('jwt-token') || localStorage.getItem('token');
+        const res = await axios.get(`${API_BASE_URL}/api/auth/users/search?query=${encodeURIComponent(searchTerm)}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (active) {
+          setSearchDropdown(res.data.filter(u => u.id !== userData.id));
+        }
+      } catch (e) {
+        setSearchDropdown([]);
+      }
+      setSearchLoading(false);
+    };
+    const timer = setTimeout(fetchSearch, 300);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [searchTerm, userData.id]);
+
+  // Update follow status in dropdown
+  const updateDropdownFollowStatus = (userId, isFollowing) => {
+    setSearchDropdown(dropdown =>
+      dropdown.map(u => (u.id === userId ? { ...u, isFollowing } : u))
+    );
+  };
+
+  // Update follow status in suggested users
+  const updateSuggestedFollowStatus = (userId, isFollowing) => {
+    setSuggestedUsers(users =>
+      users.map(u => (u.id === userId ? { ...u, isFollowing } : u))
+    );
+  };
+
+  // --- UI Functions ---
   const openMediaModal = (post, index = 0) => {
     setActiveMediaPost(post);
     setInitialMediaIndex(index);
   };
 
-  // Handle closing the media modal
   const closeMediaModal = () => {
     setActiveMediaPost(null);
   };
 
-  // Navigation functions
   const navigateToMakeoverChallenges = () => {
     navigate('/makeover-challenges');
   };
-  
+
   const navigateToRoomMakeover = () => {
     navigate('/room-makeover');
   };
-  
+
   const handleLogout = () => {
     LoginFormService.logout();
     navigate('/');
@@ -246,7 +311,6 @@ const getCommentCount = (post) => {
 
   // Handle new post creation
   const handlePostCreated = (newPost) => {
-    // Update activity summary
     setUserData(prevData => ({
       ...prevData,
       activitySummary: {
@@ -254,8 +318,6 @@ const getCommentCount = (post) => {
         postsCreated: prevData.activitySummary.postsCreated + 1
       }
     }));
-    
-    // Add the new post to the feed at the top
     const newPostForFeed = {
       id: newPost.id,
       user: {
@@ -265,7 +327,7 @@ const getCommentCount = (post) => {
       title: newPost.title,
       content: newPost.content,
       mediaFiles: newPost.mediaFiles || [],
-      image: newPost.mediaFiles && newPost.mediaFiles.length > 0 ? 
+      image: newPost.mediaFiles && newPost.mediaFiles.length > 0 ?
         (newPost.mediaFiles[0].type === 'image' ? newPost.mediaFiles[0].url : null) : null,
       likes: 0,
       comments: [],
@@ -273,97 +335,87 @@ const getCommentCount = (post) => {
       createdAt: new Date().toISOString(),
       showComments: false
     };
-    
     setPosts(prevPosts => [newPostForFeed, ...prevPosts]);
     toast.success('Your post has been published!');
   };
 
   // Toggle comments visibility for a post
   const toggleComments = (postId) => {
-    setPosts(posts.map(post => 
+    setPosts(posts.map(post =>
       post.id === postId ? { ...post, showComments: !post.showComments } : post
     ));
   };
 
-// Add a new comment to a post
-const addComment = (postId, commentText) => {
-  if (!commentText.trim()) return;
-  
-  const updatedPosts = posts.map(post => {
-    if (post.id === postId) {
-      const newCommentObj = {
-        id: Date.now(),
-        userId: userData.id,
-        parentId: null,
-        user: { 
-          name: userData.name, 
-          profilePic: userData.profilePicture 
-        },
-        content: commentText,
-        likes: 0,
-        time: 'Just now',
-        replies: []
-      };
-      
-      return {
-        ...post,
-        comments: [...post.comments, newCommentObj],
-        commentCount: (post.commentCount || 0) + 1
-      };
-    }
-    return post;
-  });
-  
-  setPosts(updatedPosts);
-};
-
-// Similar update for addReply function
-
-
-   // Add a reply to a comment
-const addReply = (postId, commentId, replyContent, isLikedPost = false) => {
-  if (!replyContent.trim()) return;
-  
-  const newReply = {
-    id: Date.now(), // Temporary ID, will be replaced when comments are refreshed
-    userId: userData.id,
-    parentId: commentId,
-    user: { 
-      name: userData.name, 
-      profilePic: userData.profilePicture 
-    },
-    content: replyContent,
-    likes: 0,
-    time: 'Just now',
-    replies: []
+  // Add a new comment to a post
+  const addComment = (postId, commentText) => {
+    if (!commentText.trim()) return;
+    const updatedPosts = posts.map(post => {
+      if (post.id === postId) {
+        const newCommentObj = {
+          id: Date.now(),
+          userId: userData.id,
+          parentId: null,
+          user: {
+            name: userData.name,
+            profilePic: userData.profilePicture
+          },
+          content: commentText,
+          likes: 0,
+          time: 'Just now',
+          replies: []
+        };
+        return {
+          ...post,
+          comments: [...post.comments, newCommentObj],
+          commentCount: (post.commentCount || 0) + 1
+        };
+      }
+      return post;
+    });
+    setPosts(updatedPosts);
   };
-  
-  if (isLikedPost) {
-    setLikedPosts(likedPosts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          comments: [...post.comments, newReply],
-          commentCount: (post.commentCount || 0) + 1
-        };
-      }
-      return post;
-    }));
-  } else {
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          comments: [...post.comments, newReply],
-          commentCount: (post.commentCount || 0) + 1
-        };
-      }
-      return post;
-    }));
-  }
-  
-  return true;
-};
+
+  // Add a reply to a comment
+  const addReply = (postId, commentId, replyContent, isLikedPost = false) => {
+    if (!replyContent.trim()) return;
+    const newReply = {
+      id: Date.now(),
+      userId: userData.id,
+      parentId: commentId,
+      user: {
+        name: userData.name,
+        profilePic: userData.profilePicture
+      },
+      content: replyContent,
+      likes: 0,
+      time: 'Just now',
+      replies: []
+    };
+    if (isLikedPost) {
+      setLikedPosts(likedPosts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            comments: [...post.comments, newReply],
+            commentCount: (post.commentCount || 0) + 1
+          };
+        }
+        return post;
+      }));
+    } else {
+      setPosts(posts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            comments: [...post.comments, newReply],
+            commentCount: (post.commentCount || 0) + 1
+          };
+        }
+        return post;
+      }));
+    }
+    return true;
+  };
 
   // Like a comment
   const likeComment = (postId, commentId, replyId = null) => {
@@ -371,7 +423,6 @@ const addReply = (postId, commentId, replyContent, isLikedPost = false) => {
       if (post.id === postId) {
         const updatedComments = post.comments.map(comment => {
           if (replyId) {
-            // This is handling replies, but with the flat structure, we need a different approach
             if (comment.id === replyId) {
               return { ...comment, likes: comment.likes + 1 };
             }
@@ -380,7 +431,6 @@ const addReply = (postId, commentId, replyContent, isLikedPost = false) => {
           }
           return comment;
         });
-        
         return { ...post, comments: updatedComments };
       }
       return post;
@@ -388,42 +438,37 @@ const addReply = (postId, commentId, replyContent, isLikedPost = false) => {
   };
 
   // Like a post
-const likePost = async (postId) => {
-  try {
-    const response = await LikeService.toggleLike(postId);
-    const { liked, likeCount } = response;
-    
-    // Update the post in the posts state
-    setPosts(posts.map(post =>
-      post.id === postId ? { ...post, likes: likeCount, userLiked: liked } : post
-    ));
-    
-    // Update activity summary if user liked the post
-    if (liked) {
-      setUserData(prevData => ({
-        ...prevData,
-        activitySummary: {
-          ...prevData.activitySummary,
-          postsLiked: prevData.activitySummary.postsLiked + 1
-        }
-      }));
-    } else {
-      // Decrease if unliked and count > 0
-      setUserData(prevData => ({
-        ...prevData,
-        activitySummary: {
-          ...prevData.activitySummary,
-          postsLiked: Math.max(0, prevData.activitySummary.postsLiked - 1)
-        }
-      }));
+  const likePost = async (postId) => {
+    try {
+      const response = await LikeService.toggleLike(postId);
+      const { liked, likeCount } = response;
+      setPosts(posts.map(post =>
+        post.id === postId ? { ...post, likes: likeCount, userLiked: liked } : post
+      ));
+      if (liked) {
+        setUserData(prevData => ({
+          ...prevData,
+          activitySummary: {
+            ...prevData.activitySummary,
+            postsLiked: prevData.activitySummary.postsLiked + 1
+          }
+        }));
+      } else {
+        setUserData(prevData => ({
+          ...prevData,
+          activitySummary: {
+            ...prevData.activitySummary,
+            postsLiked: Math.max(0, prevData.activitySummary.postsLiked - 1)
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      toast.error('Failed to update like status. Please try again.');
     }
-  } catch (error) {
-    console.error('Error toggling like:', error);
-    toast.error('Failed to update like status. Please try again.');
-  }
-};
+  };
 
-
+  // --- Render ---
   return (
     <div className="dashboard-container">
       {/* Left Sidebar */}
@@ -434,7 +479,6 @@ const likePost = async (postId) => {
             <span>GrowtHive</span>
           </div>
         </div>
-        
         <div className="sidebar-menu">
           <div className={`menu-item ${activeTab === 'feed' ? 'active' : ''}`} onClick={() => setActiveTab('feed')}>
             <Home size={22} />
@@ -466,7 +510,6 @@ const likePost = async (postId) => {
             <span>Settings</span>
           </div>
         </div>
-
         <div className="sidebar-footer">
           <div className="menu-item logout" onClick={handleLogout}>
             <LogOut size={22} />
@@ -479,22 +522,60 @@ const likePost = async (postId) => {
       <div className="dashboard-main">
         {/* Header with search and profile quick access */}
         <header className="dashboard-header">
-          <div className="search-container">
+          <div className="search-container" style={{ position: 'relative' }}>
             <Search size={20} />
-            <input type="text" placeholder="Search designs, techniques, users..." />
+            <input
+              type="text"
+              placeholder="Search designs, techniques, users..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+              ref={searchInputRef}
+              autoComplete="off"
+            />
+            {searchFocused && searchTerm && (
+              <div className="search-dropdown">
+                {searchLoading ? (
+                  <div className="dropdown-row">Searching...</div>
+                ) : searchDropdown.length === 0 ? (
+                  <div className="dropdown-row">No users found.</div>
+                ) : (
+                  searchDropdown.map(user => (
+                    <div className="dropdown-row" key={user.id}>
+                      <div className="dropdown-user-info">
+                        <img
+                          src={user.profilePicture || 'https://randomuser.me/api/portraits/lego/2.jpg'}
+                          alt={user.name}
+                          className="dropdown-user-avatar"
+                          style={{ width: 32, height: 32, borderRadius: '50%', marginRight: 8 }}
+                        />
+                        <span>{user.name}</span>
+                        <span style={{ fontSize: 12, color: '#888', marginLeft: 8 }}>{user.email}</span>
+                      </div>
+                      <button
+                        className="follow-button"
+                        disabled={user.isFollowing || user.id === userData.id}
+                        onClick={() => handleFollow(user.id, updateDropdownFollowStatus)}
+                        style={{ marginLeft: 'auto' }}
+                      >
+                        {user.isFollowing ? 'Following' : 'Follow'}
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
-          
           <div className="header-actions">
             <button className="create-button" onClick={handleCreatePost}>
               <PlusCircle size={20} />
               <span>Create Post</span>
             </button>
-            
             <div className="notification-icon" onClick={toggleNotifications}>
               <Bell size={22} />
               <div className="notification-badge">4</div>
             </div>
-            
             <Link to="/profile" className="profile-quick-access">
               <img src={userData.profilePicture} alt="Profile" />
               <span>{userData.name.split(' ')[0]}</span>
@@ -539,7 +620,6 @@ const likePost = async (postId) => {
               <p>Posts Created</p>
             </div>
           </div>
-          
           <div className="summary-widget">
             <div className="widget-icon likes-icon">
               <Heart size={24} />
@@ -549,9 +629,8 @@ const likePost = async (postId) => {
               <p>Posts Liked</p>
             </div>
           </div>
-          
-          <div 
-            className="summary-widget challenges-widget" 
+          <div
+            className="summary-widget challenges-widget"
             onClick={navigateToMakeoverChallenges}
             style={{ cursor: 'pointer' }}
           >
@@ -563,7 +642,6 @@ const likePost = async (postId) => {
               <p className="design-challenges-text">Design Challenges</p>
             </div>
           </div>
-          
           <div className="summary-widget">
             <div className="widget-icon comments-icon">
               <MessageSquare size={24} />
@@ -578,7 +656,6 @@ const likePost = async (postId) => {
         {/* Feed Section */}
         <section className="feed-section">
           <h2>Your Feed</h2>
-          
           <div className="posts-container">
             {loading ? (
               <div className="loading-posts">
@@ -598,32 +675,28 @@ const likePost = async (postId) => {
                       <span className="post-time">{post.timestamp}</span>
                     </div>
                   </div>
-                  
                   <h3 className="post-title">{post.title}</h3>
                   <p className="post-content">{post.content}</p>
-                  
                   {post.mediaFiles && post.mediaFiles.length > 0 && (
-                    <MediaGallery 
-                      mediaFiles={post.mediaFiles} 
-                      API_BASE_URL={API_BASE_URL} 
+                    <MediaGallery
+                      mediaFiles={post.mediaFiles}
+                      API_BASE_URL={API_BASE_URL}
                       onClick={() => openMediaModal(post)}
                     />
                   )}
-                  
                   <div className="post-actions">
-                  <div className="action-button" onClick={() => likePost(post.id)}>
-                    <Heart size={20} className={post.userLiked ? "liked-heart" : ""} />
-                    <span>{post.likes}</span>
-                  </div>
-                    <div 
-                      className={`action-button ${post.showComments ? 'active' : ''}`} 
+                    <div className="action-button" onClick={() => likePost(post.id)}>
+                      <Heart size={20} className={post.userLiked ? "liked-heart" : ""} />
+                      <span>{post.likes}</span>
+                    </div>
+                    <div
+                      className={`action-button ${post.showComments ? 'active' : ''}`}
                       onClick={() => toggleComments(post.id)}
                     >
                       <MessageSquare size={20} />
-                      <span>{getCommentCount(post)}</span>
+                      <span>{post.commentCount || post.comments.length}</span>
                     </div>
                   </div>
-
                   {post.showComments && (
                     <CommentSection
                       post={post}
@@ -662,30 +735,31 @@ const likePost = async (postId) => {
         <div className="suggested-connections">
           <h3>Suggested Connections</h3>
           <div className="connection-list">
-            <div className="connection-item">
-              <img src="https://randomuser.me/api/portraits/men/42.jpg" alt="Alex Wong" />
-              <div className="connection-info">
-                <h4>Alex Wong</h4>
-                <p>Color Theory Expert</p>
-              </div>
-              <button className="follow-button">Follow</button>
-            </div>
-            <div className="connection-item">
-              <img src="https://randomuser.me/api/portraits/women/55.jpg" alt="Jessica Miller" />
-              <div className="connection-info">
-                <h4>Jessica Miller</h4>
-                <p>Furniture Design</p>
-              </div>
-              <button className="follow-button">Follow</button>
-            </div>
-            <div className="connection-item">
-              <img src="https://randomuser.me/api/portraits/men/67.jpg" alt="Daniel Kim" />
-              <div className="connection-info">
-                <h4>Daniel Kim</h4>
-                <p>Sustainability Expert</p>
-              </div>
-              <button className="follow-button">Follow</button>
-            </div>
+            {suggestedLoading ? (
+              <div className="connection-item">Loading...</div>
+            ) : suggestedUsers.length === 0 ? (
+              <div className="connection-item">No suggestions</div>
+            ) : (
+              suggestedUsers.map(user => (
+                <div className="connection-item" key={user.id}>
+                  <img
+                    src={user.profilePicture || 'https://randomuser.me/api/portraits/lego/3.jpg'}
+                    alt={user.name}
+                  />
+                  <div className="connection-info">
+                    <h4>{user.name}</h4>
+                    <p>{user.email}</p>
+                  </div>
+                  <button
+                    className="follow-button"
+                    disabled={user.isFollowing || user.id === userData.id}
+                    onClick={() => handleFollow(user.id, updateSuggestedFollowStatus)}
+                  >
+                    {user.isFollowing ? 'Following' : 'Follow'}
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -694,19 +768,19 @@ const likePost = async (postId) => {
           <div className="topic-list">
             <div className="topic-item">
               <span>#MinimalistDesign</span>
-              <span className="topic-count">128 posts</span>
+              <span className="topic-count">8 posts</span>
             </div>
             <div className="topic-item">
               <span>#SustainableLiving</span>
-              <span className="topic-count">97 posts</span>
+              <span className="topic-count">4 posts</span>
             </div>
             <div className="topic-item">
               <span>#SmallSpaces</span>
-              <span className="topic-count">85 posts</span>
+              <span className="topic-count">1 posts</span>
             </div>
             <div className="topic-item">
               <span>#ColorTheory</span>
-              <span className="topic-count">72 posts</span>
+              <span className="topic-count">2 posts</span>
             </div>
           </div>
         </div>
@@ -725,8 +799,8 @@ const likePost = async (postId) => {
 
       {/* Modal for SkillPost */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <SkillPost 
-          onClose={() => setIsModalOpen(false)} 
+        <SkillPost
+          onClose={() => setIsModalOpen(false)}
           onPostCreated={handlePostCreated}
         />
       </Modal>

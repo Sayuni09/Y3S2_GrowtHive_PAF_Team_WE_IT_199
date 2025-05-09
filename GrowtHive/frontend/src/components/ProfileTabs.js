@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Grid, Heart, Users, Search, X, Edit, Trash2, MessageSquare } from 'lucide-react';
 import CommentSection from './CommentSection';
 import MediaGallery from './MediaGallery';
 import PostMediaModal from './PostMediaModal';
 import API_BASE_URL from '../services/baseUrl';
+import FollowService from '../services/FollowService';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 function ProfileTabs({
   activeTab,
@@ -16,9 +19,6 @@ function ProfileTabs({
   setFollowerSearch,
   followingSearch,
   setFollowingSearch,
-  filteredFollowers,
-  filteredFollowing,
-  handleFollowToggle,
   handleEditPost,
   handleDeletePrompt,
   toggleComments,
@@ -31,6 +31,81 @@ function ProfileTabs({
   const [activeMediaPost, setActiveMediaPost] = useState(null);
   const [initialMediaIndex, setInitialMediaIndex] = useState(0);
 
+  // Followers and following state
+  const [allUsers, setAllUsers] = useState([]);
+  const [loadingConnections, setLoadingConnections] = useState(false);
+
+  // Fetch all users (except self) with follow status
+  useEffect(() => {
+    const fetchConnections = async () => {
+      if (!userData.id) return;
+      setLoadingConnections(true);
+      try {
+        const token = localStorage.getItem('jwt-token') || localStorage.getItem('token');
+        const res = await axios.get(
+          `${API_BASE_URL}/api/auth/users/search?query=`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setAllUsers(res.data || []);
+      } catch (err) {
+        setAllUsers([]);
+        toast.error('Failed to load connections');
+      }
+      setLoadingConnections(false);
+    };
+    fetchConnections();
+  }, [userData.id]);
+
+  // Filtered followers and following lists
+  const filteredFollowers = allUsers
+    .filter(u =>
+      (u.name || '').toLowerCase().includes(followerSearch.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(followerSearch.toLowerCase())
+    )
+    .filter(u => !u.isFollowing); // Not followed by current user (for "Follow Back")
+
+  const filteredFollowing = allUsers
+    .filter(u =>
+      (u.name || '').toLowerCase().includes(followingSearch.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(followingSearch.toLowerCase())
+    )
+    .filter(u => u.isFollowing); // Followed by current user
+
+  // Follow/Unfollow logic
+  const handleFollow = async (userId) => {
+    try {
+      await FollowService.followUser(userId);
+      setAllUsers(users =>
+        users.map(u =>
+          u.id === userId ? { ...u, isFollowing: true } : u
+        )
+      );
+      toast.success('Followed user!');
+    } catch (e) {
+      toast.error(
+        e?.response?.data?.error ||
+        (e?.response?.data?.message ? e.response.data.message : 'Could not follow user')
+      );
+    }
+  };
+
+  const handleUnfollow = async (userId) => {
+    try {
+      await FollowService.unfollowUser(userId);
+      setAllUsers(users =>
+        users.map(u =>
+          u.id === userId ? { ...u, isFollowing: false } : u
+        )
+      );
+      toast.success('Unfollowed user!');
+    } catch (e) {
+      toast.error(
+        e?.response?.data?.error ||
+        (e?.response?.data?.message ? e.response.data.message : 'Could not unfollow user')
+      );
+    }
+  };
+
   const openMediaModal = (post, index = 0) => {
     setActiveMediaPost(post);
     setInitialMediaIndex(index);
@@ -39,7 +114,6 @@ function ProfileTabs({
   const closeMediaModal = () => {
     setActiveMediaPost(null);
   };
-
 
   return (
     <div className="profile-content">
@@ -58,7 +132,7 @@ function ProfileTabs({
           <Heart size={18} />
           Liked Posts
         </button>
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'followers' ? 'active' : ''}`}
           onClick={() => setActiveTab('followers')}
         >
@@ -67,8 +141,7 @@ function ProfileTabs({
         </button>
       </div>
 
- {/* Tab Content */}
- <div className="tab-content">
+      <div className="tab-content">
         {/* Posts Tab */}
         {activeTab === 'posts' && (
           <div className="posts-grid">
@@ -78,19 +151,18 @@ function ProfileTabs({
               posts.map(post => (
                 <div key={post.id} className="post-card">
                   <div className="post-content">
-                    {/* Post header with actions */}
                     <div className="post-header-actions">
                       <h3 className="post-title">{post.title}</h3>
                       <div className="post-actions">
-                        <button 
-                          className="edit-post-btn" 
+                        <button
+                          className="edit-post-btn"
                           onClick={() => handleEditPost(post)}
                           aria-label="Edit post"
                         >
                           <Edit size={16} />
                         </button>
-                        <button 
-                          className="delete-post-btn" 
+                        <button
+                          className="delete-post-btn"
                           onClick={() => handleDeletePrompt(post)}
                           aria-label="Delete post"
                         >
@@ -98,7 +170,6 @@ function ProfileTabs({
                         </button>
                       </div>
                     </div>
-                    
                     <p className="post-excerpt">{post.content}</p>
                     <div className="post-meta">
                       <span className="post-time">{post.timestamp}</span>
@@ -106,17 +177,17 @@ function ProfileTabs({
                         <span className="post-category">{post.category}</span>
                       )}
                       <div className="post-stats">
-                        <span 
-                          className="stat" 
+                        <span
+                          className="stat"
                           onClick={() => likePost(post.id)}
                         >
-                          <Heart 
-                            size={16} 
-                            className={post.userLiked ? "liked-heart filled" : ""} 
+                          <Heart
+                            size={16}
+                            className={post.userLiked ? "liked-heart filled" : ""}
                           />
                           {post.likes}
                         </span>
-                        <span 
+                        <span
                           className={`stat comment-toggle ${post.showComments ? 'active' : ''}`}
                           onClick={() => toggleComments(post.id)}
                         >
@@ -125,10 +196,8 @@ function ProfileTabs({
                         </span>
                       </div>
                     </div>
-                    
-                    {/* Comment Section */}
                     {post.showComments && (
-                      <CommentSection 
+                      <CommentSection
                         post={post}
                         userData={userData}
                         onAddComment={(postId, comment) => addComment(postId, comment)}
@@ -138,12 +207,10 @@ function ProfileTabs({
                       />
                     )}
                   </div>
-                  
-             {/* Post media */}
-             {post.mediaFiles && post.mediaFiles.length > 0 && (
-                    <MediaGallery 
-                      mediaFiles={post.mediaFiles} 
-                      API_BASE_URL={API_BASE_URL} 
+                  {post.mediaFiles && post.mediaFiles.length > 0 && (
+                    <MediaGallery
+                      mediaFiles={post.mediaFiles}
+                      API_BASE_URL={API_BASE_URL}
                       onClick={() => openMediaModal(post)}
                     />
                   )}
@@ -151,16 +218,16 @@ function ProfileTabs({
               ))
             ) : (
               <div className="empty-tab-message">
-              <div className="empty-icon">✍️</div>
-              <h3>No posts yet</h3>
-              <p>Share your first post to see it here</p>
-            </div>
-          )}
-        </div>
-      )}
+                <div className="empty-icon">✍️</div>
+                <h3>No posts yet</h3>
+                <p>Share your first post to see it here</p>
+              </div>
+            )}
+          </div>
+        )}
 
-       {/* Liked Posts Tab */}
-       {activeTab === 'liked' && (
+        {/* Liked Posts Tab */}
+        {activeTab === 'liked' && (
           <div className="posts-grid">
             {isLoading ? (
               <div className="loading">Loading your liked posts...</div>
@@ -179,18 +246,17 @@ function ProfileTabs({
                     <p className="post-excerpt">{post.content}</p>
                     <div className="post-meta">
                       <div className="post-stats">
-                        <span 
-                          className="stat" 
+                        <span
+                          className="stat"
                           onClick={() => likePost(post.id, true)}
                         >
-                          <Heart 
-                            size={16} 
-                            className={post.userLiked ? "liked-heart filled" : ""} 
+                          <Heart
+                            size={16}
+                            className={post.userLiked ? "liked-heart filled" : ""}
                           />
                           {post.likes}
                         </span>
-
-                        <span 
+                        <span
                           className={`stat comment-toggle ${post.showComments ? 'active' : ''}`}
                           onClick={() => toggleComments(post.id, true)}
                         >
@@ -199,10 +265,8 @@ function ProfileTabs({
                         </span>
                       </div>
                     </div>
-                    
-                    {/* Comment Section */}
                     {post.showComments && (
-                      <CommentSection 
+                      <CommentSection
                         post={post}
                         userData={userData}
                         onAddComment={(postId, comment) => addComment(postId, comment, true)}
@@ -212,12 +276,10 @@ function ProfileTabs({
                       />
                     )}
                   </div>
-
-                  {/* Media handling - support both mediaFiles and single image */}
                   {post.mediaFiles && post.mediaFiles.length > 0 ? (
-                    <MediaGallery 
-                      mediaFiles={post.mediaFiles} 
-                      API_BASE_URL={API_BASE_URL} 
+                    <MediaGallery
+                      mediaFiles={post.mediaFiles}
+                      API_BASE_URL={API_BASE_URL}
                       onClick={() => openMediaModal(post)}
                     />
                   ) : post.image && (
@@ -243,7 +305,7 @@ function ProfileTabs({
         {activeTab === 'followers' && (
           <div className="connections-container">
             <div className="connections-section">
-              <h3>Followers</h3>
+              <h3>Followers (not followed by you)</h3>
               <div className="search-box">
                 <Search size={16} />
                 <input
@@ -253,8 +315,8 @@ function ProfileTabs({
                   onChange={(e) => setFollowerSearch(e.target.value)}
                 />
                 {followerSearch && (
-                  <button 
-                    className="clear-search" 
+                  <button
+                    className="clear-search"
                     onClick={() => setFollowerSearch('')}
                   >
                     <X size={16} />
@@ -262,18 +324,20 @@ function ProfileTabs({
                 )}
               </div>
               <div className="connections-list">
-                {filteredFollowers && filteredFollowers.length > 0 ? (
+                {loadingConnections ? (
+                  <div className="loading">Loading followers...</div>
+                ) : filteredFollowers.length > 0 ? (
                   filteredFollowers.map(follower => (
                     <div key={follower.id} className="connection-card">
                       <div className="connection-info">
-                        <img src={follower.image} alt={follower.name} />
+                        <img src={follower.profilePicture || 'https://randomuser.me/api/portraits/lego/1.jpg'} alt={follower.name} />
                         <span className="connection-name">{follower.name}</span>
                       </div>
-                      <button 
-                        className={`connection-action ${follower.isFollowing ? 'following' : ''}`}
-                        onClick={() => handleFollowToggle(follower.id, 'follower')}
+                      <button
+                        className="connection-action"
+                        onClick={() => handleFollow(follower.id)}
                       >
-                        {follower.isFollowing ? 'Following' : 'Follow Back'}
+                        Follow Back
                       </button>
                     </div>
                   ))
@@ -282,7 +346,7 @@ function ProfileTabs({
                 )}
               </div>
             </div>
-            
+
             <div className="connections-section">
               <h3>Following</h3>
               <div className="search-box">
@@ -294,8 +358,8 @@ function ProfileTabs({
                   onChange={(e) => setFollowingSearch(e.target.value)}
                 />
                 {followingSearch && (
-                  <button 
-                    className="clear-search" 
+                  <button
+                    className="clear-search"
                     onClick={() => setFollowingSearch('')}
                   >
                     <X size={16} />
@@ -303,16 +367,18 @@ function ProfileTabs({
                 )}
               </div>
               <div className="connections-list">
-                {filteredFollowing && filteredFollowing.length > 0 ? (
+                {loadingConnections ? (
+                  <div className="loading">Loading following...</div>
+                ) : filteredFollowing.length > 0 ? (
                   filteredFollowing.map(followed => (
                     <div key={followed.id} className="connection-card">
                       <div className="connection-info">
-                        <img src={followed.image} alt={followed.name} />
+                        <img src={followed.profilePicture || 'https://randomuser.me/api/portraits/lego/2.jpg'} alt={followed.name} />
                         <span className="connection-name">{followed.name}</span>
                       </div>
-                      <button 
+                      <button
                         className="connection-action following"
-                        onClick={() => handleFollowToggle(followed.id, 'following')}
+                        onClick={() => handleUnfollow(followed.id)}
                       >
                         Following
                       </button>
@@ -327,12 +393,12 @@ function ProfileTabs({
         )}
       </div>
 
-    {/* Media Modal */}
-    {activeMediaPost && (
+      {/* Media Modal */}
+      {activeMediaPost && (
         <PostMediaModal
           isOpen={activeMediaPost !== null}
           onClose={closeMediaModal}
-          mediaFiles={activeMediaPost.mediaFiles || 
+          mediaFiles={activeMediaPost.mediaFiles ||
             (activeMediaPost.image ? [{ type: 'image', url: activeMediaPost.image.replace(API_BASE_URL, '') }] : [])}
           API_BASE_URL={API_BASE_URL}
           initialIndex={initialMediaIndex}
