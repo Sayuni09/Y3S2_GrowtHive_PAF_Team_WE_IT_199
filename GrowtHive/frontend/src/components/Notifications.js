@@ -1,94 +1,15 @@
 // src/components/Notifications.js
 import React, { useState, useEffect } from 'react';
-import { Bell, Heart, MessageSquare, Book, Check, Filter, UserPlus } from 'lucide-react';
+import { Bell, Heart, MessageSquare, UserPlus, Check, Filter } from 'lucide-react';
+import NotificationService from '../services/NotificationService';
 import '../styles/Notifications.css';
 
+// Map notification types to their corresponding icons
 const notificationIcons = {
-  like: Heart,
-  comment: MessageSquare,
-  plan: Book,
-  follow: UserPlus  // Added new icon for follow notifications
+  LIKE: Heart,
+  COMMENT: MessageSquare,
+  FOLLOW: UserPlus
 };
-
-const mockNotifications = [
-  { 
-    id: 1, 
-    type: 'like', 
-    content: 'Alice Parker liked your post "Minimalist Design Tips"', 
-    read: false,
-    time: '10 minutes ago',
-    user: {
-      name: 'Alice Parker',
-      profile: 'https://randomuser.me/api/portraits/women/42.jpg'
-    }
-  },
-  { 
-    id: 2, 
-    type: 'comment', 
-    content: 'Bob Johnson commented: "This is exactly what I needed. Thanks for sharing these insights!"', 
-    read: false,
-    time: '2 hours ago',
-    user: {
-      name: 'Bob Johnson',
-      profile: 'https://randomuser.me/api/portraits/men/32.jpg'
-    }
-  },
-  { 
-    id: 3, 
-    type: 'follow', // Added new follow notification
-    content: 'Sophia Rodriguez started following you',
-    read: false,
-    time: '1 hour ago',
-    user: {
-      name: 'Sophia Rodriguez',
-      profile: 'https://randomuser.me/api/portraits/women/28.jpg'
-    }
-  },
-  { 
-    id: 4, 
-    type: 'plan', 
-    content: 'Your learning plan "React Basics" was updated with 2 new lessons',
-    read: true,
-    time: 'Yesterday',
-    user: {
-      name: 'System',
-      profile: null
-    }
-  },
-  { 
-    id: 5, 
-    type: 'like', 
-    content: 'Michael Chen and 3 others liked your comment on "Color Theory in Practice"', 
-    read: true,
-    time: '2 days ago',
-    user: {
-      name: 'Michael Chen',
-      profile: 'https://randomuser.me/api/portraits/men/45.jpg'
-    }
-  },
-  { 
-    id: 6, 
-    type: 'comment', 
-    content: 'Sarah Williams replied to your comment: "I completely agree with your perspective."', 
-    read: true,
-    time: '3 days ago',
-    user: {
-      name: 'Sarah Williams',
-      profile: 'https://randomuser.me/api/portraits/women/63.jpg'
-    }
-  },
-  { 
-    id: 7, 
-    type: 'follow', // Added another follow notification
-    content: 'David Wilson started following you',
-    read: true,
-    time: '4 days ago',
-    user: {
-      name: 'David Wilson',
-      profile: 'https://randomuser.me/api/portraits/men/22.jpg'
-    }
-  }
-];
 
 function Notifications() {
   const [notifications, setNotifications] = useState([]);
@@ -96,30 +17,53 @@ function Notifications() {
   const [loading, setLoading] = useState(true);
   const [showFilterOptions, setShowFilterOptions] = useState(false);
 
-  // Simulate API call to get notifications
+  // Fetch notifications on component mount
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setNotifications(mockNotifications);
-      setLoading(false);
-    }, 800);
-    
-    return () => clearTimeout(timer);
+    fetchNotifications();
   }, []);
 
+  // Function to fetch all notifications
+  const fetchNotifications = async () => {
+    setLoading(true);
+    try {
+      const data = await NotificationService.getAllNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Apply filter to notifications
   const filtered = filter === 'all'
     ? notifications
     : filter === 'unread'
       ? notifications.filter(n => !n.read)
-      : notifications.filter(n => n.type === filter);
+      : notifications.filter(n => n.type === filter.toUpperCase());
 
-  const markAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  // Mark all notifications as read
+  const markAllRead = async () => {
+    try {
+      await NotificationService.markAllNotificationsAsRead();
+      // Update local state to reflect all as read
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+    }
   };
 
-  const markAsRead = (id) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  // Mark a single notification as read
+  const markAsRead = async (id) => {
+    try {
+      await NotificationService.markNotificationAsRead(id);
+      // Update the specific notification in the local state
+      setNotifications(notifications.map(n => 
+        n.id === id ? { ...n, read: true } : n
+      ));
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
   };
 
   const toggleFilterOptions = () => {
@@ -127,6 +71,36 @@ function Notifications() {
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Function to format the timestamp
+  const formatTime = (timestamp) => {
+    try {
+      // Parse the timestamp string into a Date object
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffInSeconds = Math.floor((now - date) / 1000);
+      
+      if (diffInSeconds < 60) {
+        return 'just now';
+      } else if (diffInSeconds < 3600) {
+        const minutes = Math.floor(diffInSeconds / 60);
+        return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+      } else if (diffInSeconds < 86400) {
+        const hours = Math.floor(diffInSeconds / 3600);
+        return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      } else if (diffInSeconds < 2592000) {
+        const days = Math.floor(diffInSeconds / 86400);
+        return `${days} day${days > 1 ? 's' : ''} ago`;
+      } else {
+        // If more than a month, show date
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return date.toLocaleDateString(undefined, options);
+      }
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return "Unknown time";
+    }
+  };
 
   return (
     <div className="notifications-container">
@@ -164,14 +138,14 @@ function Notifications() {
                   <UserPlus size={16} />
                   <span>Follows</span>
                 </div>
-                <div className={`filter-option ${filter === 'plan' ? 'active' : ''}`} onClick={() => { setFilter('plan'); setShowFilterOptions(false); }}>
-                  <Book size={16} />
-                  <span>Learning Plans</span>
-                </div>
               </div>
             )}
           </div>
-          <button className="mark-read-button" onClick={markAllRead} disabled={unreadCount === 0}>
+          <button 
+            className="mark-read-button" 
+            onClick={markAllRead} 
+            disabled={unreadCount === 0}
+          >
             <Check size={18} />
             <span>Mark All as Read</span>
           </button>
@@ -191,7 +165,7 @@ function Notifications() {
       ) : (
         <ul className="notifications-list">
           {filtered.map(notification => {
-            const IconComponent = notificationIcons[notification.type];
+            const IconComponent = notificationIcons[notification.type] || Bell;
             
             return (
               <li 
@@ -200,8 +174,8 @@ function Notifications() {
                 onClick={() => !notification.read && markAsRead(notification.id)}
               >
                 <div className="notification-avatar">
-                  {notification.user.profile ? (
-                    <img src={notification.user.profile} alt={notification.user.name} />
+                  {notification.actorProfilePic ? (
+                    <img src={notification.actorProfilePic} alt={notification.actorName} />
                   ) : (
                     <div className="system-avatar">
                       <Bell size={16} />
@@ -210,13 +184,13 @@ function Notifications() {
                 </div>
                 <div className="notification-content">
                   <div className="notification-message">
-                    {notification.content}
+                    {notification.message}
                   </div>
                   <div className="notification-meta">
-                    <span className="notification-time">{notification.time}</span>
-                    <div className={`notification-type-indicator ${notification.type}`}>
+                    <span className="notification-time">{formatTime(notification.createdAt)}</span>
+                    <div className={`notification-type-indicator ${notification.type.toLowerCase()}`}>
                       <IconComponent size={14} />
-                      <span>{notification.type}</span>
+                      <span>{notification.type.toLowerCase()}</span>
                     </div>
                   </div>
                 </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, User, Bell, Search, PlusCircle, Book, Heart, MessageSquare, Settings, LogOut, Sofa, Trophy } from 'lucide-react';
+import { Home, User, Bell, Search, PlusCircle, Book, Heart, MessageSquare, Settings, LogOut, Sofa, Trophy, UserPlus, Check } from 'lucide-react';
 import '../styles/Dashboard.css';
 import Modal from '../components/Modal';
 import SkillPost from '../components/SkillPost';
@@ -11,6 +11,7 @@ import MediaGallery from '../components/MediaGallery';
 import PostMediaModal from '../components/PostMediaModal';
 import LoginFormService from '../services/LoginFormService';
 import LikeService from '../services/LikeService';
+import NotificationService from '../services/NotificationService';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import API_BASE_URL from '../services/baseUrl';
@@ -38,6 +39,16 @@ function Dashboard() {
       { id: 4, type: 'post', user: 'David Wilson', content: 'shared a new post: "Minimalist Kitchen Essentials"', time: '2 days ago' }
     ]
   });
+
+  // State for notification status
+  const [notificationStatus, setNotificationStatus] = useState({
+    hasUnread: false,
+    unreadCount: 0
+  });
+
+  // State for real notifications fetched from backend
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
 
   // Posts state
   const [posts, setPosts] = useState([]);
@@ -80,6 +91,56 @@ function Dashboard() {
       return `${diffDays} days ago`;
     } else {
       return date.toLocaleDateString();
+    }
+  };
+
+  // Fetch notification status
+  const fetchNotificationStatus = async () => {
+    try {
+      const status = await NotificationService.getNotificationStatus();
+      setNotificationStatus(status);
+    } catch (error) {
+      console.error("Error fetching notification status:", error);
+    }
+  };
+
+  // Fetch notifications
+  const fetchNotifications = async () => {
+    setNotificationsLoading(true);
+    try {
+      const data = await NotificationService.getAllNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  // Mark notification as read
+  const markAsRead = async (id) => {
+    try {
+      await NotificationService.markNotificationAsRead(id);
+      // Update the specific notification in the local state
+      setNotifications(notifications.map(n => 
+        n.id === id ? { ...n, read: true } : n
+      ));
+      // Update notification status
+      fetchNotificationStatus();
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    try {
+      await NotificationService.markAllNotificationsAsRead();
+      // Update local state to reflect all as read
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setNotificationStatus({ hasUnread: false, unreadCount: 0 });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
     }
   };
 
@@ -171,6 +232,7 @@ function Dashboard() {
 
   // Load user data from localStorage on component mount
   useEffect(() => {
+    // Get user data from local storage
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
@@ -187,6 +249,15 @@ function Dashboard() {
       }
     }
     fetchAllPosts();
+    
+    // Fetch notification status on mount
+    fetchNotificationStatus();
+
+    // Set up interval to periodically check for new notifications
+    const intervalId = setInterval(fetchNotificationStatus, 60000); // Check every minute
+    
+    // Clear interval on component unmount
+    return () => clearInterval(intervalId);
   }, [fetchAllPosts]);
 
   // Fetch 3 recently registered users for Suggested Connections
@@ -278,6 +349,48 @@ function Dashboard() {
     );
   };
 
+  // Function to format notification time
+  const formatNotificationTime = (timestamp) => {
+    try {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffInSeconds = Math.floor((now - date) / 1000);
+      
+      if (diffInSeconds < 60) {
+        return 'just now';
+      } else if (diffInSeconds < 3600) {
+        const minutes = Math.floor(diffInSeconds / 60);
+        return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+      } else if (diffInSeconds < 86400) {
+        const hours = Math.floor(diffInSeconds / 3600);
+        return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      } else if (diffInSeconds < 2592000) {
+        const days = Math.floor(diffInSeconds / 86400);
+        return `${days} day${days > 1 ? 's' : ''} ago`;
+      } else {
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return date.toLocaleDateString(undefined, options);
+      }
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return "Unknown time";
+    }
+  };
+
+  // Get notification icon based on type
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'LIKE':
+        return <Heart size={18} />;
+      case 'COMMENT':
+        return <MessageSquare size={18} />;
+      case 'FOLLOW':
+        return <UserPlus size={18} />;
+      default:
+        return <Bell size={18} />;
+    }
+  };
+
   // --- UI Functions ---
   const openMediaModal = (post, index = 0) => {
     setActiveMediaPost(post);
@@ -301,8 +414,14 @@ function Dashboard() {
     navigate('/');
   };
 
-  const toggleNotifications = () => {
-    setShowNotifications(!showNotifications);
+  const toggleNotifications = async () => {
+    const newState = !showNotifications;
+    setShowNotifications(newState);
+    
+    // Fetch notifications when opening the panel
+    if (newState && notifications.length === 0) {
+      await fetchNotifications();
+    }
   };
 
   const handleCreatePost = () => {
@@ -499,7 +618,9 @@ function Dashboard() {
           <Link to="/notifications" className={`menu-item ${activeTab === 'notifications' ? 'active' : ''}`}>
             <Bell size={22} />
             <span>Notifications</span>
-            <div className="notification-badge">4</div>
+            {notificationStatus.unreadCount > 0 && (
+              <div className="notification-badge">{notificationStatus.unreadCount}</div>
+            )}
           </Link>
           <Link to="/profile" className="menu-item">
             <User size={22} />
@@ -574,7 +695,9 @@ function Dashboard() {
             </button>
             <div className="notification-icon" onClick={toggleNotifications}>
               <Bell size={22} />
-              <div className="notification-badge">4</div>
+              {notificationStatus.unreadCount > 0 && (
+                <div className="notification-badge">{notificationStatus.unreadCount}</div>
+              )}
             </div>
             <Link to="/profile" className="profile-quick-access">
               <img src={userData.profilePicture} alt="Profile" />
@@ -587,25 +710,60 @@ function Dashboard() {
         {showNotifications && (
           <div className="notifications-panel">
             <div className="notifications-header">
-              <h3>Notifications</h3>
-              <button onClick={() => setShowNotifications(false)}>Close</button>
+              <h3>
+                <Bell size={20} /> 
+                Notifications
+                {notificationStatus.unreadCount > 0 && (
+                  <span className="unread-badge">{notificationStatus.unreadCount}</span>
+                )}
+              </h3>
+              <div className="notification-actions">
+                <button 
+                  className="mark-read-button" 
+                  onClick={markAllAsRead}
+                  disabled={notificationStatus.unreadCount === 0}
+                >
+                  <Check size={16} />
+                  <span>Mark All as Read</span>
+                </button>
+                <button onClick={() => setShowNotifications(false)}>Close</button>
+              </div>
             </div>
             <div className="notifications-list">
-              {userData.notifications.map(notification => (
-                <div key={notification.id} className={`notification-item ${notification.type}`}>
-                  <div className="notification-icon">
-                    {notification.type === 'like' && <Heart size={18} />}
-                    {notification.type === 'comment' && <MessageSquare size={18} />}
-                    {notification.type === 'follow' && <User size={18} />}
-                    {notification.type === 'post' && <PlusCircle size={18} />}
-                  </div>
-                  <div className="notification-content">
-                    <p><strong>{notification.user}</strong> {notification.content}</p>
-                    <span className="notification-time">{notification.time}</span>
-                  </div>
+              {notificationsLoading ? (
+                <div className="loading-state">
+                  <div className="spinner"></div>
+                  <p>Loading notifications...</p>
                 </div>
-              ))}
+              ) : notifications.length === 0 ? (
+                <div className="empty-state">
+                  <Bell size={36} />
+                  <p>No notifications to display</p>
+                </div>
+              ) : (
+                notifications.map(notification => (
+                  <div 
+                    key={notification.id} 
+                    className={`notification-item ${notification.read ? 'read' : 'unread'}`}
+                    onClick={() => !notification.read && markAsRead(notification.id)}
+                  >
+                    <div className="notification-icon">
+                      {getNotificationIcon(notification.type)}
+                    </div>
+                    <div className="notification-content">
+                      <p>{notification.message}</p>
+                      <span className="notification-time">{formatNotificationTime(notification.createdAt)}</span>
+                    </div>
+                    {!notification.read && <div className="unread-indicator"></div>}
+                  </div>
+                ))
+              )}
             </div>
+            {/* <div className="notifications-footer">
+              <Link to="/notifications" onClick={() => setShowNotifications(false)}>
+                View All Notifications
+              </Link>
+            </div> */}
           </div>
         )}
 

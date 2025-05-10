@@ -1,22 +1,63 @@
 // src/pages/NotificationsPage.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Home, User, Bell, Search, PlusCircle, Book, Settings, LogOut, Sofa  } from 'lucide-react';
+import { Home, User, Bell, Search, PlusCircle, Book, Settings, LogOut, Sofa } from 'lucide-react';
 import Notifications from '../components/Notifications';
 import Modal from '../components/Modal';
 import SkillPost from '../components/SkillPost';
+import NotificationService from '../services/NotificationService';
 import '../styles/Dashboard.css';
 
 function NotificationsPage() {
-  // Mock data for demonstration
-  const [userData, _setUserData] = useState({
-    name: 'E.M.T.T.BANDARANAYAKE',
-    email: '3lakshana1124@gmail.com',
-    profilePicture: 'https://randomuser.me/api/portraits/women/44.jpg',
+  // State for user data
+  const [userData, setUserData] = useState({
+    name: '',
+    email: '',
+    profilePicture: '',
   });
-
+  
+  // State for notification status
+  const [notificationStatus, setNotificationStatus] = useState({
+    hasUnread: false,
+    unreadCount: 0
+  });
+  
   const [activeTab] = useState('notifications');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [_loading, setLoading] = useState(true);
+
+  // Fetch user data and notification status on component mount
+  useEffect(() => {
+    // Get user data from local storage
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    // Set user data
+    setUserData({
+      name: user.name || 'User',
+      email: user.email || '',
+      profilePicture: user.profilePicture || 'https://randomuser.me/api/portraits/women/44.jpg',
+    });
+    
+    // Fetch notification status
+    fetchNotificationStatus();
+
+    // Set up interval to periodically check for new notifications
+    const intervalId = setInterval(fetchNotificationStatus, 60000); // Check every minute
+    
+    // Clear interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const fetchNotificationStatus = async () => {
+    try {
+      const status = await NotificationService.getNotificationStatus();
+      setNotificationStatus(status);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching notification status:", error);
+      setLoading(false);
+    }
+  };
 
   const handleCreatePost = () => {
     setIsModalOpen(true);
@@ -47,13 +88,15 @@ function NotificationsPage() {
             <span>Learning Plans</span>
           </Link>
           <Link to="/room-makeover" className={`menu-item ${activeTab === 'room-makeover' ? 'active' : ''}`}>
-          <Sofa size={22} />
-          <span>Room Makeover</span>
-        </Link>
-         <Link to="/notifications" className={`menu-item ${activeTab === 'notifications' ? 'active' : ''}`}>
+            <Sofa size={22} />
+            <span>Room Makeover</span>
+          </Link>
+          <Link to="/notifications" className={`menu-item ${activeTab === 'notifications' ? 'active' : ''}`}>
             <Bell size={22} />
             <span>Notifications</span>
-            <div className="notification-badge">4</div>
+            {notificationStatus.unreadCount > 0 && (
+              <div className="notification-badge">{notificationStatus.unreadCount}</div>
+            )}
           </Link>
           <Link to="/profile" className={`menu-item ${activeTab === 'profile' ? 'active' : ''}`}>
             <User size={22} />
