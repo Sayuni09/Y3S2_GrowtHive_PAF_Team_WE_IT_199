@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import QuizForm from './QuizForm';
 import QuizTake from './QuizTake';
 import { PlusCircle, Share2, Award, Eye, BarChart, Trash2 } from 'lucide-react';
-import { getAllQuizzes, createQuiz, updateQuiz, deleteQuiz, getQuizzesByCreator, getSharedQuizzes } from '../services/quizService';
+import {  createQuiz, updateQuiz, deleteQuiz, getQuizzesByCreator, getSharedQuizzes } from '../services/quizService';
 import { useNavigate } from 'react-router-dom';
 
 function QuizList() {
@@ -20,34 +20,33 @@ function QuizList() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userId = user.id;
 
-  useEffect(() => {
-    if (!token || !userId) {
-      navigate('/');
-      return;
+  const fetchQuizzes = useCallback(async () => {
+  try {
+    setLoading(true);
+    let data;
+    if (viewMode === 'my') {
+      data = await getQuizzesByCreator(userId);
+    } else {
+      data = await getSharedQuizzes();
     }
-    fetchQuizzes();
-  }, [userId, token, navigate, viewMode]);
+    setQuizzes(data);
+    setError(null);
+  } catch (err) {
+    console.error('Error fetching quizzes:', err);
+    setError('Failed to load quizzes. Please try again later.');
+  } finally {
+    setLoading(false);
+  }
+}, [userId, viewMode]);
 
-  const fetchQuizzes = async () => {
-    try {
-      setLoading(true);
-      let data;
-      if (viewMode === 'my') {
-        // In "My Quizzes" view, show all quizzes created by the user
-        data = await getQuizzesByCreator(userId);
-      } else {
-        // In "All Quizzes" view, show all shared quizzes
-        data = await getSharedQuizzes();
-      }
-      setQuizzes(data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching quizzes:', err);
-      setError('Failed to load quizzes. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
+useEffect(() => {
+  if (!token || !userId) {
+    navigate('/');
+    return;
+  }
+  fetchQuizzes();
+}, [userId, token, navigate, viewMode, fetchQuizzes]);
+
 
   const handleDeleteQuiz = async (id) => {
     if (window.confirm('Are you sure you want to delete this quiz?')) {
