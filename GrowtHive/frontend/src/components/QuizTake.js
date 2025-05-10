@@ -12,14 +12,18 @@ function QuizTake({ quiz, onClose, onFinish }) {
     setSelected(option);
   };
 
+  // Helper for case-insensitive, trimmed comparison
+  const isCorrect = (userAnswer, correctAnswer) =>
+    userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
+
   const next = () => {
-    if (selected === question.answer) setScore(score + 1);
+    if (isCorrect(selected, question.correctAnswer)) setScore(score + 1);
     setSelected('');
     if (current + 1 < quiz.questions.length) {
       setCurrent(current + 1);
     } else {
       setFinished(true);
-      onFinish(score + (selected === question.answer ? 1 : 0), quiz.questions.length);
+      onFinish(score + (isCorrect(selected, question.correctAnswer) ? 1 : 0), quiz.questions.length);
     }
   };
 
@@ -29,7 +33,7 @@ function QuizTake({ quiz, onClose, onFinish }) {
         <button className="close-btn" onClick={onClose}>×</button>
         {!finished ? (
           <>
-            <h3>{question.question}</h3>
+            <h3>{question.questionText}</h3>
             <div className="quiz-options">
               {question.options.map((opt, idx) => (
                 <button
