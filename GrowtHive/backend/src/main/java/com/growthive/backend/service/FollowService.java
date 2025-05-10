@@ -21,6 +21,9 @@ public class FollowService {
     
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private  NotificationService notificationService;
     
     public Follow followUser(String followerId, String followingId) {
         logger.info("User {} attempting to follow user {}", followerId, followingId);
@@ -47,6 +50,10 @@ public class FollowService {
         
         Follow savedFollow = followRepository.save(follow);
         logger.info("User {} successfully followed user {}", followerId, followingId);
+
+        // Create notification
+notificationService.createFollowNotification(followerId, followingId);
+
         return savedFollow;
     }
     

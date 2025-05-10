@@ -29,6 +29,7 @@ public class LikeService {
     private final LikeRepository likeRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     /**
      * Toggle like status for a post
@@ -68,6 +69,9 @@ public class LikeService {
             likeRepository.save(newLike);
             hasLiked = true;
             logger.info("Added like to post ID: {} by user ID: {}", postId, userId);
+
+            // Create notification
+    notificationService.createLikeNotification(postId, userId);
         }
         
         // Update post like count

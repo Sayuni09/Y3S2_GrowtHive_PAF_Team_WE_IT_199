@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import com.growthive.backend.service.NotificationService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,6 +23,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     // Create a new comment or reply
     public Comment createComment(String postId, String userId, String content, String parentId) {
@@ -56,6 +58,10 @@ public class CommentService {
         
         // Save comment
         Comment savedComment = commentRepository.save(comment);
+
+
+        // Create notification for comment
+        notificationService.createCommentNotification(postId, userId, savedComment.getId());
         
         // Update comment count in post
         post.setComments(post.getComments() + 1);
