@@ -1,59 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import LearningPlanForm from './LearningPlanForm';
-import { Trash2, Edit, CheckCircle, Clock, Award } from 'lucide-react';
+import { Trash2, Edit, CheckCircle, Clock, Award, BookOpen } from 'lucide-react';
+import { getLearningPlans, createLearningPlan, updateLearningPlan, deleteLearningPlan } from '../services/learningPlanService';
 
 function LearningPlanList() {
-  const [plans, setPlans] = useState([
-    { 
-      id: 1, 
-      title: 'Color Theory for Interior Design', 
-      status: 'in-progress',
-      progress: 65,
-      description: 'Learn how to use colors effectively in interior spaces'
-    },
-    { 
-      id: 2, 
-      title: 'Furniture Arrangement Principles', 
-      status: 'completed',
-      progress: 100,
-      description: 'Master the art of furniture placement for optimal flow'
-    },
-    { 
-      id: 3, 
-      title: 'Lighting Design Fundamentals', 
-      status: 'in-progress',
-      progress: 35,
-      description: 'Understanding natural and artificial lighting for spaces'
-    },
-    { 
-      id: 4, 
-      title: 'Sustainable Materials', 
-      status: 'completed',
-      progress: 100,
-      description: 'Eco-friendly materials for modern interior design'
-    },
-  ]);
+  const [plans, setPlans] = useState([]);
   const [editingPlan, setEditingPlan] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const addPlan = (plan) => {
-    setPlans([...plans, { ...plan, id: Date.now(), progress: 0 }]);
+  useEffect(() => {
+    fetchLearningPlans();
+  }, []);
+
+  const fetchLearningPlans = async () => {
+    try {
+      setLoading(true);
+      const data = await getLearningPlans();
+      setPlans(data);
+      setError(null);
+    } catch (err) {
+      setError('Cannot connect to the server. Please check your internet connection.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updatePlan = (updatedPlan) => {
-    setPlans(plans.map(p => (p.id === updatedPlan.id ? updatedPlan : p)));
-    setEditingPlan(null);
+  const addPlan = async (plan) => {
+    try {
+      const newPlan = {
+        ...plan,
+        status: plan.progress === 100 ? 'completed' : 'in-progress'
+      };
+      const createdPlan = await createLearningPlan(newPlan);
+      setPlans([...plans, createdPlan]);
+      setError(null);
+    } catch (err) {
+      setError('Failed to create learning plan');
+    }
   };
 
-  const deletePlan = (id) => {
-    setPlans(plans.filter(p => p.id !== id));
+  const updatePlan = async (updatedPlan) => {
+    try {
+      console.log("Updating plan with id:", updatedPlan.id, updatedPlan);
+      const result = await updateLearningPlan(updatedPlan.id, {
+        ...updatedPlan,
+        status: updatedPlan.progress === 100 ? 'completed' : 'in-progress'
+      });
+      setPlans(plans.map(p => (p.id === result.id ? result : p)));
+      setEditingPlan(null);
+      setError(null);
+    } catch (err) {
+      setError('Failed to update learning plan');
+    }
   };
 
-  const inProgress = plans.filter(p => p.status === 'in-progress');
-  const completed = plans.filter(p => p.status === 'completed');
+  const deletePlanHandler = async (id) => {
+    try {
+      await deleteLearningPlan(id);
+      setPlans(plans.filter(p => p.id !== id));
+      setError(null);
+    } catch (err) {
+      setError('Failed to delete learning plan');
+    }
+  };
+
+  const inProgress = plans.filter(p => p.status === 'in-progress' || p.progress < 100);
+  const completed = plans.filter(p => p.status === 'completed' || p.progress === 100);
+
+  if (loading) return <div className="loading">Loading...</div>;
+  if (error) return <div className="error-message">{error}</div>;
 
   return (
     <div className="plans-section">
-      {/* Create New Learning Plan section moved above In-Progress section */}
       <div className="plan-form-section">
         <h3>{editingPlan ? 'Edit Learning Plan' : 'Create New Learning Plan'}</h3>
         <LearningPlanForm
@@ -63,12 +82,15 @@ function LearningPlanList() {
         />
       </div>
 
-      <h2>In-Progress Learning Plans</h2>
+      <h2>
+        <Clock size={24} className="section-icon" />
+        In-Progress Learning Plans
+      </h2>
       <div className="plans-list">
         {inProgress.map(plan => (
           <div className="plan-card" key={plan.id}>
             <div className="card-header">
-              <Clock size={18} />
+              <BookOpen size={20} />
               <span className="progress-indicator">{plan.progress}%</span>
             </div>
             <h3>{plan.title}</h3>
@@ -80,21 +102,30 @@ function LearningPlanList() {
               <button onClick={() => setEditingPlan(plan)}>
                 <Edit size={16} /> Edit
               </button>
-              <button onClick={() => deletePlan(plan.id)} className="delete-btn">
+              <button onClick={() => deletePlanHandler(plan.id)} className="delete-btn">
                 <Trash2 size={16} /> Delete
               </button>
             </div>
           </div>
         ))}
+        {inProgress.length === 0 && (
+          <div className="empty-state">
+            <Clock size={48} />
+            <p>No in-progress learning plans yet</p>
+          </div>
+        )}
       </div>
 
-      <h2>Completed Learning Plans</h2>
+      <h2>
+        <Award size={24} className="section-icon" />
+        Completed Learning Plans
+      </h2>
       <div className="plans-list">
         {completed.map(plan => (
           <div className="plan-card completed" key={plan.id}>
             <div className="card-header">
-              <Award size={18} />
-              <CheckCircle size={18} />
+              <Award size={20} />
+              <CheckCircle size={20} />
             </div>
             <h3>{plan.title}</h3>
             <p>{plan.description}</p>
@@ -102,12 +133,18 @@ function LearningPlanList() {
               <button onClick={() => setEditingPlan(plan)}>
                 <Edit size={16} /> Edit
               </button>
-              <button onClick={() => deletePlan(plan.id)} className="delete-btn">
+              <button onClick={() => deletePlanHandler(plan.id)} className="delete-btn">
                 <Trash2 size={16} /> Delete
               </button>
             </div>
           </div>
         ))}
+        {completed.length === 0 && (
+          <div className="empty-state">
+            <Award size={48} />
+            <p>No completed learning plans yet</p>
+          </div>
+        )}
       </div>
     </div>
   );
