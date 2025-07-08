@@ -12,7 +12,7 @@ function LearningPlan() {
 
   // Mock user data (similar to Dashboard.js)
   const userData = {
-    name: 'E.M.T.T.BANDARANAYAKE',
+    name: 'Aththanayake',
     email: '3lakshana1124@gmail.com',
     profilePicture: 'https://randomuser.me/api/portraits/women/44.jpg',
     notifications: [
