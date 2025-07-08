@@ -1,0 +1,679 @@
+/* src/styles/RoomMakeover.css */
+.room-makeover-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .makeover-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  
+  .makeover-header h1 {
+    font-size: 32px;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .makeover-header p {
+    font-size: 16px;
+    color: #666;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  /* Progress Steps */
+  .makeover-progress {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    padding: 0 10%;
+    position: relative;
+  }
+  
+  .makeover-progress::before {
+    content: '';
+    position: absolute;
+    top: 24px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background-color: #e0e0e0;
+    z-index: 1;
+  }
+  
+  .progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .step-number {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 2px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 18px;
+    color: #999;
+    margin-bottom: 8px;
+  }
+  
+  .progress-step.active .step-number {
+    border-color: #8C6140;
+    color: #8C6140;
+    background-color: rgba(184, 141, 108, 0.1);
+  }
+  
+  .progress-step.completed .step-number {
+    background-color: #8C6140;
+    border-color: #8C6140;
+    color: white;
+  }
+  
+  .progress-step span {
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .progress-step.active span {
+    color: #8C6140;
+    font-weight: 500;
+  }
+  
+  /* Room Photo Uploader */
+  .room-photo-uploader {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .upload-area {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    background-color: #f9f9f9;
+    margin-bottom: 30px;
+    transition: all 0.3s ease;
+  }
+  
+  .upload-area.dragging {
+    border-color: #8C6140;
+    background-color: rgba(184, 141, 108, 0.1);
+  }
+  
+  .upload-icon {
+    color: #8C6140;
+    margin-bottom: 20px;
+  }
+  
+  .upload-area h3 {
+    font-size: 22px;
+    margin-bottom: 10px;
+    color: #333;
+  }
+  
+  .upload-area p {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 15px;
+  }
+  
+  .upload-tip {
+    font-size: 14px !important;
+    color: #888 !important;
+    font-style: italic;
+  }
+  
+  .upload-btn {
+    background: none;
+    border: none;
+    color: #8C6140;
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: underline;
+    font-size: 16px;
+  }
+  
+  .upload-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d32f2f;
+    margin-top: 20px;
+    padding: 10px;
+    background-color: rgba(211, 47, 47, 0.1);
+    border-radius: 4px;
+  }
+  
+  .upload-error svg {
+    margin-right: 8px;
+  }
+  
+  .preview-container {
+    margin-bottom: 30px;
+  }
+  
+  .room-preview {
+    width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .preview-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 16px;
+  }
+  
+  .preview-action-btn {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  
+  .preview-action-btn svg {
+    margin-right: 8px;
+  }
+  
+  .preview-action-btn.remove {
+    background-color: #f5f5f5;
+    color: #666;
+  }
+  
+  .preview-action-btn.remove:hover {
+    background-color: #e0e0e0;
+  }
+  
+  .preview-action-btn.confirm {
+    background-color: #8C6140;
+    color: white;
+  }
+  
+  .preview-action-btn.confirm:hover {
+    background-color: #6a4a30;
+  }
+  
+  .photo-tips {
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 20px;
+  }
+  
+  .photo-tips h4 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 16px;
+  }
+  
+  .photo-tips ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+  
+  .photo-tips li {
+    color: #666;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  
+  /* AI Redesign Generator */
+  .ai-redesign-generator {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .style-selection {
+    margin-bottom: 30px;
+  }
+  
+  .style-selection h3 {
+    font-size: 20px;
+    margin-bottom: 15px;
+    color: #333;
+  }
+  
+  .style-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .style-option {
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .style-option:hover {
+    border-color: #B88D6C;
+    background-color: rgba(184, 141, 108, 0.05);
+  }
+  
+  .style-option.selected {
+    border-color: #8C6140;
+    background-color: rgba(184, 141, 108, 0.1);
+  }
+  
+  .style-name {
+    display: block;
+    font-weight: 500;
+    font-size: 16px;
+    margin-bottom: 6px;
+    color: #333;
+  }
+  
+  .style-description {
+    display: block;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .generate-actions {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+  }
+  
+  .generate-btn {
+    display: flex;
+    align-items: center;
+    padding: 12px 30px;
+    background-color: #8C6140;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .generate-btn:hover {
+    background-color: #6a4a30;
+  }
+  
+  .generate-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .generate-btn svg {
+    margin-right: 10px;
+  }
+  
+  .spin {
+    animation: spin 1.5s linear infinite;
+  }
+  
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .generate-error {
+    text-align: center;
+    color: #d32f2f;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: rgba(211, 47, 47, 0.1);
+    border-radius: 4px;
+  }
+  
+  .generation-progress {
+    max-width: 600px;
+    margin: 0 auto 30px;
+  }
+  
+  .progress-bar {
+    height: 8px;
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  
+  .progress-fill {
+    height: 100%;
+    background-color: #8C6140;
+    transition: width 0.3s ease;
+  }
+  
+  .progress-steps {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 100px;
+    text-align: center;
+  }
+  
+  .progress-step svg {
+    color: #ccc;
+    margin-bottom: 6px;
+  }
+  
+  .progress-step span {
+    font-size: 12px;
+    color: #999;
+  }
+  
+  .progress-step.active svg {
+    color: #8C6140;
+  }
+  
+  .progress-step.active span {
+    color: #333;
+    font-weight: 500;
+  }
+  
+  .redesign-result {
+    margin-top: 40px;
+  }
+  
+  .redesign-result h3 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #333;
+  }
+  
+  .redesign-image-container {
+    max-height: 500px;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .redesign-image {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  
+  .redesign-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 16px;
+  }
+  
+  .redesign-action-btn {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #f5f5f5;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .redesign-action-btn:hover {
+    background-color: #e0e0e0;
+  }
+  
+  .redesign-action-btn svg {
+    margin-right: 8px;
+  }
+  
+  /* Results step */
+  .results-step {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .results-step h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #333;
+  }
+  
+  .comparison-container {
+    margin-bottom: 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .results-actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .action-button {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .action-button svg {
+    margin-right: 8px;
+  }
+  
+  .action-button.save {
+    background-color: #8C6140;
+    color: white;
+  }
+  
+  .action-button.save:hover {
+    background-color: #6a4a30;
+  }
+  
+  .action-button.challenge {
+    background-color: #7D9D8C;
+    color: white;
+  }
+  
+  .action-button.challenge:hover {
+    background-color: #5d7868;
+  }
+  
+  .action-button.share {
+    background-color: #f5f5f5;
+    color: #333;
+  }
+  
+  .action-button.share:hover {
+    background-color: #e0e0e0;
+  }
+  
+  .save-message {
+    text-align: center;
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 20px;
+  }
+  
+  .save-message.success {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: #388e3c;
+  }
+  
+  /* Challenge Creation Step */
+  .challenge-step {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .challenge-step h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #333;
+  }
+  
+  .challenge-preview {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 30px;
+  }
+  
+  .challenge-image-container {
+    flex: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .challenge-room-image {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  
+  .challenge-form {
+    flex: 1;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+  }
+  
+  .challenge-title-input,
+  .form-group textarea,
+  .form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 15px;
+    color: #333;
+  }
+  
+  .form-group textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+  
+  .form-group select {
+    background-color: white;
+  }
+  
+  .publish-challenge-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 14px;
+    background-color: #8C6140;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 30px;
+  }
+  
+  .publish-challenge-btn:hover {
+    background-color: #6a4a30;
+  }
+  
+  .publish-challenge-btn svg {
+    margin-right: 8px;
+  }
+  
+  .challenge-tips {
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+  }
+  
+  .challenge-tips h3 {
+    margin-bottom: 12px;
+    font-size: 18px;
+    color: #333;
+  }
+  
+  .challenge-tips ul {
+    padding-left: 20px;
+    margin: 0;
+  }
+  
+  .challenge-tips li {
+    margin-bottom: 8px;
+    color: #666;
+  }
+  
+  @media (max-width: 768px) {
+    .challenge-preview {
+      flex-direction: column;
+    }
+    
+    .style-options {
+      grid-template-columns: 1fr 1fr;
+    }
+    
+    .results-actions {
+      flex-wrap: wrap;
+    }
+    
+    .action-button {
+      flex: 1 0 calc(50% - 8px);
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .makeover-progress {
+      padding: 0;
+    }
+    
+    .style-options {
+      grid-template-columns: 1fr;
+    }
+    
+    .action-button {
+      flex: 1 0 100%;
+      margin-bottom: 10px;
+    }
+  }
+  

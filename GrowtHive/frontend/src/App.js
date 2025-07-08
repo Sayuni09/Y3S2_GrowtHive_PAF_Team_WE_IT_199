@@ -8,6 +8,9 @@ import SkillPostPage from './pages/SkillPostPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ExplorePage from './pages/ExplorePage';
 import LearningPlan from './pages/LearningPlan';
+import RoomMakeoverPage from './pages/RoomMakeoverPage';
+import MakeoverChallengesPage from './pages/MakeoverChallengesPage';
+import MakeoverDetailsPage from './pages/MakeoverDetailsPage';
 import LoginFormService from './services/LoginFormService';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -150,6 +153,24 @@ function App() {
         <Route path="/explore" element={
           <ProtectedRoute>
             <ExplorePage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/room-makeover" element={
+          <ProtectedRoute>
+            <RoomMakeoverPage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/makeover-challenges" element={
+          <ProtectedRoute>
+            <MakeoverChallengesPage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/makeover-challenges/:id" element={
+          <ProtectedRoute>
+            <MakeoverDetailsPage />
           </ProtectedRoute>
         } />
 
